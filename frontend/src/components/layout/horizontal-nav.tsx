@@ -60,11 +60,13 @@ export function HorizontalNav({
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-4">
             {/* Sidebar Trigger or Back Button */}
             {showBackButton ? (
-                <Button variant="ghost" size="icon" onClick={onBack} className="-ml-1">
+                <Button variant="ghost" size="icon" onClick={onBack} className="-ml-1 cursor-pointer">
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
             ) : (
-                <SidebarTrigger className="-ml-1" />
+                <div className="cursor-pointer">
+                    <SidebarTrigger className="-ml-1" />
+                </div>
             )}
             <Separator orientation="vertical" className="h-6" />
 
@@ -80,7 +82,7 @@ export function HorizontalNav({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button size="sm" className="hidden sm:flex gap-2" onClick={onCreate}>
+                        <Button size="sm" className="hidden sm:flex gap-2 cursor-pointer" onClick={onCreate}>
                             <Plus className="h-4 w-4" />
                             <span className="hidden lg:inline">New Shipment</span>
                         </Button>
@@ -93,7 +95,7 @@ export function HorizontalNav({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="relative">
+                        <Button variant="ghost" size="icon" className="relative cursor-pointer">
                             <Bell className="h-5 w-5" />
                             <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                                 3
@@ -104,10 +106,15 @@ export function HorizontalNav({
                 </Tooltip>
             </TooltipProvider>
 
+            {/* Theme Toggle */}
+            <div className="cursor-pointer">
+                <ThemeToggle />
+            </div>
+
             {/* User Avatar Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full ml-2 h-8 w-8 border border-border/50">
+                    <Button variant="ghost" size="icon" className="rounded-full ml-2 h-8 w-8 border border-border/50 cursor-pointer">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src="/avatar.jpg" />
                             <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs">
@@ -136,9 +143,6 @@ export function HorizontalNav({
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
         </header>
     );
 }
