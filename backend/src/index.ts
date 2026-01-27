@@ -61,7 +61,7 @@ async function startServer() {
     // Health check endpoint
     app.get("/health", (_, res) => {
         const dbState = mongoose.connection.readyState;
-        const stateMap = {
+        const stateMap: Record<number, string> = {
             0: "disconnected",
             1: "connected",
             2: "connecting",
