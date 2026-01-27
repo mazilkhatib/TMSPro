@@ -60,7 +60,30 @@ async function startServer() {
 
     // Health check endpoint
     app.get("/health", (_, res) => {
-        res.json({ status: "ok", timestamp: new Date().toISOString() });
+        const dbState = mongoose.connection.readyState;
+        const stateMap = {
+            0: "disconnected",
+            1: "connected",
+            2: "connecting",
+            3: "disconnecting",
+        };
+        const dbStatus = stateMap[dbState] || "unknown";
+
+        // Return 503 if DB is not connected
+        if (dbState !== 1) {
+            res.status(503).json({
+                status: "error",
+                database: dbStatus,
+                timestamp: new Date().toISOString()
+            });
+            return;
+        }
+
+        res.json({
+            status: "ok",
+            database: dbStatus,
+            timestamp: new Date().toISOString()
+        });
     });
 
     // Start server
