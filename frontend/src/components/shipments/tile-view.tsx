@@ -110,7 +110,7 @@ export function TileView({
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-2">
             <motion.div
                 key={`page-${page}`}
                 variants={container}
@@ -122,12 +122,12 @@ export function TileView({
                     <motion.div key={shipment.id} variants={item}>
                         <Card
                             className={cn(
-                                "h-full hover:shadow-lg transition-shadow duration-200",
+                                "h-full hover:shadow-lg transition-shadow duration-200 cursor-pointer",
                                 shipment.flagged && "border-destructive/50 bg-destructive/5"
                             )}
                             onClick={() => onSelectShipment(shipment)}
                         >
-                            <CardContent className="p-4 sm:p-5 space-y-4">
+                            <CardContent className="p-2 sm:p-5 space-y-2">
                                 <div className="flex justify-between items-start">
                                     <Badge variant="outline" className={cn("font-mono", statusColors[shipment.status])}>
                                         {shipment.status.replace(/_/g, " ")}
@@ -140,7 +140,7 @@ export function TileView({
                                                 className="h-8 w-8 -mr-2 -mt-2"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <Edit className="h-4 w-4" />
+                                                <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">

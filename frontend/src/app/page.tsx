@@ -439,6 +439,9 @@ export default function DashboardPage() {
                         <TileView
                           shipments={shipments}
                           onSelectShipment={handleSelectShipment}
+                          onEdit={handleEdit}
+                          onFlag={handleFlag}
+                          onDelete={handleDeleteClick}
                           page={page}
                           totalPages={totalPages}
                           onPageChange={setPage}
