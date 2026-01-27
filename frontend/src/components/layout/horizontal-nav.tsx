@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Search, Grid3X3, LayoutGrid, Plus } from "lucide-react";
+import { Bell, Search, Grid3X3, LayoutGrid, Plus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,33 +43,29 @@ const navItems: NavItem[] = [
 ];
 
 interface HorizontalNavProps {
-    onViewChange?: (view: "grid" | "tile") => void;
-    currentView?: "grid" | "tile";
-    showViewToggle?: boolean;
-    onSearch?: (query: string) => void;
     onCreate?: () => void;
+    showBackButton?: boolean;
+    onBack?: () => void;
 }
 
 export function HorizontalNav({
-    onViewChange,
-    currentView = "tile",
-    showViewToggle = false,
-    onSearch,
-    onCreate
+    onCreate,
+    showBackButton = false,
+    onBack
 }: HorizontalNavProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
-    const [searchQuery, setSearchQuery] = React.useState("");
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSearch?.(searchQuery);
-    };
 
     return (
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-4">
-            {/* Sidebar Trigger */}
-            <SidebarTrigger className="-ml-1" />
+            {/* Sidebar Trigger or Back Button */}
+            {showBackButton ? (
+                <Button variant="ghost" size="icon" onClick={onBack} className="-ml-1">
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
+            ) : (
+                <SidebarTrigger className="-ml-1" />
+            )}
             <Separator orientation="vertical" className="h-6" />
 
             {/* Breadcrumb / Page Title */}
@@ -79,52 +75,6 @@ export function HorizontalNav({
 
             {/* Spacer */}
             <div className="flex-1" />
-
-            {/* Search */}
-            <form onSubmit={handleSearch} className="hidden lg:flex relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search shipments..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-64 pl-9 bg-muted/50 border-0 focus-visible:ring-1"
-                />
-            </form>
-
-            {/* View Toggle */}
-            {showViewToggle && (
-                <TooltipProvider>
-                    <div className="hidden sm:flex items-center gap-1 p-1 bg-muted rounded-lg">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant={currentView === "grid" ? "secondary" : "ghost"}
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => onViewChange?.("grid")}
-                                >
-                                    <Grid3X3 className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Grid View</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant={currentView === "tile" ? "secondary" : "ghost"}
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => onViewChange?.("tile")}
-                                >
-                                    <LayoutGrid className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Tile View</TooltipContent>
-                        </Tooltip>
-                    </div>
-                </TooltipProvider>
-            )}
 
             {/* Create Button */}
             <TooltipProvider>

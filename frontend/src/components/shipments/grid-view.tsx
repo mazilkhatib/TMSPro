@@ -111,7 +111,7 @@ export function GridView({
 
     return (
         <div className="space-y-4">
-            <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden">
+            <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden w-full max-w-[calc(100vw-3rem)] sm:max-w-full">
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-b border-border/50">
@@ -150,11 +150,6 @@ export function GridView({
                             <TableHead className="text-right">
                                 <SortableHeader field="weight" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>
                                     Weight (lbs)
-                                </SortableHeader>
-                            </TableHead>
-                            <TableHead>
-                                <SortableHeader field="estimatedDelivery" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort}>
-                                    Est. Delivery
                                 </SortableHeader>
                             </TableHead>
                         </TableRow>
@@ -199,9 +194,6 @@ export function GridView({
                                 </TableCell>
                                 <TableCell className="text-right tabular-nums">
                                     {shipment.weight.toLocaleString()}
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                    {formatDate(shipment.estimatedDelivery)}
                                 </TableCell>
                             </motion.tr>
                         ))}

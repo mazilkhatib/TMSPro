@@ -96,7 +96,8 @@ export function TileView({
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString("en-US", {
             month: "short",
-            day: "numeric"
+            day: "numeric",
+            year: "numeric"
         });
     };
 
@@ -115,129 +116,90 @@ export function TileView({
                 variants={container}
                 initial="hidden"
                 animate="show"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
             >
                 {shipments.map((shipment) => (
                     <motion.div key={shipment.id} variants={item}>
                         <Card
                             className={cn(
-                                "group relative overflow-hidden transition-all duration-300 cursor-pointer",
-                                "hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1",
-                                "bg-gradient-to-br from-card to-card/80",
-                                "border border-border/50 hover:border-primary/30",
-                                shipment.flagged && "ring-2 ring-destructive/30 bg-destructive/5"
+                                "h-full hover:shadow-lg transition-shadow duration-200",
+                                shipment.flagged && "border-destructive/50 bg-destructive/5"
                             )}
                             onClick={() => onSelectShipment(shipment)}
                         >
-                            {/* Priority & Status Header */}
-                            <div className="flex items-center justify-between p-4 pb-0">
-                                <div className="flex items-center gap-2">
-                                    <div className={cn("w-2 h-2 rounded-full", statusDotColors[shipment.status])} />
-                                    <Badge
-                                        variant="outline"
-                                        className={cn("text-xs font-medium", statusColors[shipment.status])}
-                                    >
+                            <CardContent className="p-4 sm:p-5 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <Badge variant="outline" className={cn("font-mono", statusColors[shipment.status])}>
                                         {shipment.status.replace(/_/g, " ")}
                                     </Badge>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 -mr-2 -mt-2"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectShipment(shipment); }}>
+                                                <Eye className="mr-2 h-4 w-4" /> View Details
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(shipment); }}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onFlag?.(shipment); }}>
+                                                <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
+                                                {shipment.flagged ? "Unflag" : "Flag"}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(shipment); }} className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48">
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectShipment(shipment); }}>
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            View Details
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(shipment); }}>
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Edit Shipment
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onFlag?.(shipment); }}>
-                                            <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
-                                            {shipment.flagged ? "Unflag" : "Flag"} Shipment
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                            onClick={(e) => { e.stopPropagation(); onDelete?.(shipment); }}
-                                            className="text-destructive focus:text-destructive"
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
 
-                            <CardContent className="p-4 space-y-3">
-                                {/* Tracking & Priority */}
-                                <div className="space-y-1">
-                                    <p className="font-mono text-xs text-muted-foreground">
-                                        {shipment.trackingNumber}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-semibold truncate">{shipment.shipperName}</h3>
-                                        <Badge variant="secondary" className={cn("text-[10px] ml-auto", priorityColors[shipment.priority])}>
+                                <div>
+                                    <h3 className="font-semibold text-lg">{shipment.trackingNumber}</h3>
+                                    <p className="text-sm text-muted-foreground">{shipment.carrierName}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Origin</p>
+                                        <p className="font-medium truncate">{shipment.pickupLocation.city}, {shipment.pickupLocation.state}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Destination</p>
+                                        <p className="font-medium truncate">{shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}</p>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t flex justify-between items-center text-sm">
+                                    <div className="flex items-center text-muted-foreground">
+                                        <Badge variant="secondary" className={cn("mr-2 text-xs", priorityColors[shipment.priority])}>
                                             {shipment.priority}
                                         </Badge>
                                     </div>
-                                </div>
-
-                                {/* Route */}
-                                <div className="space-y-2">
-                                    <div className="flex items-start gap-2 text-sm">
-                                        <MapPin className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                                        <span className="text-muted-foreground truncate">
-                                            {shipment.pickupLocation.city}, {shipment.pickupLocation.state}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-start gap-2 text-sm">
-                                        <MapPin className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                                        <span className="text-muted-foreground truncate">
-                                            {shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Footer Info */}
-                                <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Truck className="h-3.5 w-3.5" />
-                                        <span className="truncate max-w-[80px]">{shipment.carrierName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Calendar className="h-3.5 w-3.5" />
-                                        {formatDate(shipment.estimatedDelivery)}
-                                    </div>
-                                </div>
-
-                                {/* Rate Badge */}
-                                <div className="absolute top-4 right-14 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Badge variant="secondary" className="text-xs font-medium bg-primary/10 text-primary">
+                                    <div className="font-semibold">
                                         {formatCurrency(shipment.rate)}
-                                    </Badge>
+                                    </div>
                                 </div>
                             </CardContent>
-
-                            {/* Hover Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                         </Card>
                     </motion.div>
                 ))}
             </motion.div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-2">
-                <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between px-2 pt-4 border-t border-border/40">
+                <p className="text-sm text-muted-foreground font-medium">
                     Page {page} of {totalPages}
                 </p>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="icon"

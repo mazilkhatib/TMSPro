@@ -111,7 +111,7 @@ export function DetailModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={() => onClose()}>
-            <DialogContent className="max-w-2xl p-0 overflow-hidden bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl">
+            <DialogContent showCloseButton={false} className="max-w-2xl p-0 overflow-hidden bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl">
                 {/* Header with Glassmorphism */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -139,20 +139,30 @@ export function DetailModal({
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <Badge
-                                    variant="outline"
-                                    className={cn(
-                                        "h-7 px-3 text-xs font-medium flex items-center gap-1.5 rounded-lg border shadow-sm backdrop-blur-sm",
-                                        statusColors[shipment.status]
-                                    )}
+                            <div className="flex items-start gap-4">
+                                <div className="flex flex-col items-end gap-2">
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            "h-7 px-3 text-xs font-medium flex items-center gap-1.5 rounded-lg border shadow-sm backdrop-blur-sm",
+                                            statusColors[shipment.status]
+                                        )}
+                                    >
+                                        {statusIcons[shipment.status]}
+                                        {shipment.status.replace(/_/g, " ")}
+                                    </Badge>
+                                    <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-semibold border backdrop-blur-sm", priorityColors[shipment.priority])}>
+                                        {shipment.priority} Priority
+                                    </Badge>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 -mt-1 -mr-2 text-muted-foreground hover:text-foreground"
+                                    onClick={onClose}
                                 >
-                                    {statusIcons[shipment.status]}
-                                    {shipment.status.replace(/_/g, " ")}
-                                </Badge>
-                                <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-semibold border backdrop-blur-sm", priorityColors[shipment.priority])}>
-                                    {shipment.priority} Priority
-                                </Badge>
+                                    <X className="h-4 w-4" />
+                                </Button>
                             </div>
                         </div>
                     </DialogHeader>

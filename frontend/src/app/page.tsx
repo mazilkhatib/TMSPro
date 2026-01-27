@@ -2,10 +2,18 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, TrendingUp, Truck, Clock, AlertTriangle, CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { Search, Package, TrendingUp, Truck, Clock, AlertTriangle, CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { HorizontalNav } from "@/components/layout/horizontal-nav";
@@ -17,13 +25,21 @@ import { DeleteConfirmation } from "@/components/shipments/delete-confirmation";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { GET_SHIPMENTS, GET_SHIPMENT_STATS } from "@/graphql/queries";
 import { FLAG_SHIPMENT } from "@/graphql/mutations";
-import { Shipment, ShipmentStats } from "@/types";
+import { Shipment, ShipmentStats, ShipmentStatus, ShipmentPriority } from "@/types";
 import { toast } from "sonner";
 
 // GraphQL response types
 interface ShipmentStatsResponse {
   shipmentStats: ShipmentStats;
 }
+
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  TabsTrigger as TabsTriggerPrimitive,
+} from "@/components/ui/tabs";
 
 interface PaginationInfo {
   total: number;
@@ -53,14 +69,36 @@ interface FlagShipmentResponse {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [currentView, setCurrentView] = React.useState<"grid" | "tile">("tile");
   const [selectedShipment, setSelectedShipment] = React.useState<Shipment | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [sortBy, setSortBy] = React.useState<string>("createdAt");
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
-  const [searchQuery, setSearchQuery] = React.useState("");
+
+  // View State
+  const [currentView, setCurrentView] = React.useState("tile");
+
+  // Search and Filter State
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = React.useState<string>("all");
+
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (page !== 1) setPage(1); // Reset page on new search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [statusFilter, priorityFilter]);
 
   // Flag mutation
   const [flagShipment] = useMutation<FlagShipmentResponse>(FLAG_SHIPMENT, {
@@ -81,14 +119,22 @@ export default function DashboardPage() {
     fetchPolicy: "cache-and-network",
   });
 
-  // Prepare query variables (reactive to state changes)
-  const shipmentsQueryVars = React.useMemo(() => ({
-    filter: searchQuery ? { search: searchQuery } : undefined,
-    page,
-    limit: ITEMS_PER_PAGE,
-    sortBy,
-    sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
-  }), [searchQuery, page, sortBy, sortOrder]);
+  // Prepare query variables
+  const shipmentsQueryVars = React.useMemo(() => {
+    const filter: any = {};
+
+    if (debouncedSearchTerm) filter.search = debouncedSearchTerm;
+    if (statusFilter && statusFilter !== "all") filter.status = statusFilter;
+    if (priorityFilter && priorityFilter !== "all") filter.priority = priorityFilter;
+
+    return {
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      page,
+      limit: ITEMS_PER_PAGE,
+      sortBy,
+      sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
+    };
+  }, [debouncedSearchTerm, statusFilter, priorityFilter, page, sortBy, sortOrder]);
 
   // Fetch shipments
   const {
@@ -166,20 +212,6 @@ export default function DashboardPage() {
   const hasNextPage = shipmentsData?.shipments?.pagination?.hasNextPage || false;
   const hasPrevPage = shipmentsData?.shipments?.pagination?.hasPrevPage || false;
 
-  // Debounced search handler
-  const debouncedSearch = React.useMemo(
-    () =>
-      setTimeout(() => {
-        // Reset to page 1 when search changes
-        if (page !== 1) setPage(1);
-      }, 500),
-    [searchQuery]
-  );
-
-  React.useEffect(() => {
-    return () => clearTimeout(debouncedSearch);
-  }, [debouncedSearch]);
-
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -197,11 +229,6 @@ export default function DashboardPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setTimeout(() => setSelectedShipment(null), 200);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    setPage(1); // Reset to first page on search
   };
 
   const handleEdit = (shipment: Shipment) => {
@@ -269,10 +296,6 @@ export default function DashboardPage() {
         <AppSidebar />
         <SidebarInset>
           <HorizontalNav
-            currentView={currentView}
-            onViewChange={setCurrentView}
-            showViewToggle
-            onSearch={handleSearch}
             onCreate={() => router.push("/shipments/new")}
           />
 
@@ -334,13 +357,67 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Shipments Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold">Shipments</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {totalCount} shipments found
-                  </p>
+            <Tabs value={currentView} onValueChange={setCurrentView} className="space-y-6">
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold">Shipments</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {totalCount} shipments found
+                    </p>
+                  </div>
+                  <TabsList className="grid w-[200px] grid-cols-2">
+                    <TabsTrigger value="tile">Grid</TabsTrigger>
+                    <TabsTrigger value="grid">Table</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-muted/30 p-4 rounded-lg border border-border/50">
+                  <div className="relative flex-1 w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by tracking number, carrier..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9 bg-background border-border/50"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Select
+                      value={statusFilter}
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger className="w-full sm:w-[150px] bg-background border-border/50">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="PENDING">Pending</SelectItem>
+                        <SelectItem value="PICKED_UP">Picked Up</SelectItem>
+                        <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
+                        <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
+                        <SelectItem value="DELIVERED">Delivered</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={priorityFilter}
+                      onValueChange={setPriorityFilter}
+                    >
+                      <SelectTrigger className="w-full sm:w-[150px] bg-background border-border/50">
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priorities</SelectItem>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="LOW">Low</SelectItem>
+                        <SelectItem value="URGENT">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -350,44 +427,47 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
-                ) : currentView === "tile" ? (
-                  <motion.div
-                    key={`tile-${page}`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <TileView
-                      shipments={shipments}
-                      onSelectShipment={handleSelectShipment}
-                      page={page}
-                      totalPages={totalPages}
-                      onPageChange={setPage}
-                    />
-                  </motion.div>
                 ) : (
-                  <motion.div
-                    key={`grid-${page}`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <GridView
-                      shipments={shipments}
-                      onSelectShipment={handleSelectShipment}
-                      sortBy={sortBy}
-                      sortOrder={sortOrder}
-                      onSort={handleSort}
-                      page={page}
-                      totalPages={totalPages}
-                      onPageChange={setPage}
-                    />
-                  </motion.div>
+                  <>
+                    <TabsContent value="tile" className="mt-0">
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <TileView
+                          shipments={shipments}
+                          onSelectShipment={handleSelectShipment}
+                          page={page}
+                          totalPages={totalPages}
+                          onPageChange={setPage}
+                        />
+                      </motion.div>
+                    </TabsContent>
+                    <TabsContent value="grid" className="mt-0">
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <GridView
+                          shipments={shipments}
+                          onSelectShipment={handleSelectShipment}
+                          sortBy={sortBy}
+                          sortOrder={sortOrder}
+                          onSort={handleSort}
+                          page={page}
+                          totalPages={totalPages}
+                          onPageChange={setPage}
+                        />
+                      </motion.div>
+                    </TabsContent>
+                  </>
                 )}
               </AnimatePresence>
-            </div>
+            </Tabs>
           </main>
 
           {/* Detail Modal */}

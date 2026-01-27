@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { motion } from "framer-motion";
 import {
+    Search,
     Plus,
     Edit,
     Trash2,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     Table,
@@ -33,6 +35,19 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { HorizontalNav } from "@/components/layout/horizontal-nav";
@@ -88,10 +103,48 @@ const ITEMS_PER_PAGE = 20;
 export default function ShipmentsPage() {
     const router = useRouter();
     const [page, setPage] = React.useState(1);
-    const [searchQuery, setSearchQuery] = React.useState("");
     const [selectedShipment, setSelectedShipment] = React.useState<Shipment | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
+    // Search and Filter State
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState("");
+    const [statusFilter, setStatusFilter] = React.useState<string>("all");
+    const [priorityFilter, setPriorityFilter] = React.useState<string>("all");
+
+    // Debounce search term
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+            if (page !== 1) setPage(1); // Reset page on new search
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Reset page when filters change
+    React.useEffect(() => {
+        setPage(1);
+    }, [statusFilter, priorityFilter]);
+
+    // Prepare query variables
+    const shipmentsQueryVars = React.useMemo(() => {
+        const filter: any = {};
+
+        if (debouncedSearchTerm) filter.search = debouncedSearchTerm;
+        if (statusFilter && statusFilter !== "all") filter.status = statusFilter;
+        if (priorityFilter && priorityFilter !== "all") filter.priority = priorityFilter;
+
+        return {
+            filter: Object.keys(filter).length > 0 ? filter : undefined,
+            page,
+            limit: ITEMS_PER_PAGE,
+            sortBy: "createdAt",
+            sortOrder: "DESC" as "ASC" | "DESC"
+        };
+    }, [debouncedSearchTerm, statusFilter, priorityFilter, page]);
+
+    // Fetch shipments
     // Fetch shipments
     const {
         data: shipmentsData,
@@ -99,51 +152,10 @@ export default function ShipmentsPage() {
         error: shipmentsError,
         refetch: refetchShipments
     } = useQuery<ShipmentsResponse>(GET_SHIPMENTS, {
-        variables: {
-            filter: searchQuery ? { search: searchQuery } : undefined,
-            page,
-            limit: ITEMS_PER_PAGE,
-            sortBy: "createdAt",
-            sortOrder: "DESC"
-        },
+        variables: shipmentsQueryVars,
         fetchPolicy: "cache-and-network",
         notifyOnNetworkStatusChange: true
     });
-
-    // Delete mutation
-    const [deleteShipment, { loading: deleteLoading }] = useMutation<DeleteShipmentResponse>(DELETE_SHIPMENT, {
-        onCompleted: (data) => {
-            if (data.deleteShipment) {
-                toast.success("Shipment deleted successfully");
-                refetchShipments();
-                setIsDeleteDialogOpen(false);
-                setSelectedShipment(null);
-            }
-        },
-        onError: (error) => {
-            toast.error(error.message);
-        }
-    });
-
-    // Flag mutation
-    const [flagShipment] = useMutation<FlagShipmentResponse>(FLAG_SHIPMENT, {
-        onCompleted: (data) => {
-            toast.success(data.flagShipment.flagged ? "Shipment flagged" : "Shipment unflagged");
-            refetchShipments();
-        },
-        onError: (error) => {
-            toast.error(error.message);
-        }
-    });
-
-    // Prepare query variables (reactive to state changes)
-    const shipmentsQueryVars = React.useMemo(() => ({
-        filter: searchQuery ? { search: searchQuery } : undefined,
-        page,
-        limit: ITEMS_PER_PAGE,
-        sortBy: "createdAt",
-        sortOrder: "DESC" as "ASC" | "DESC"
-    }), [searchQuery, page]);
 
     // Get shipments and pagination info from response
     const shipments = shipmentsData?.shipments?.shipments || [];
@@ -236,141 +248,214 @@ export default function ShipmentsPage() {
                 <AppSidebar />
                 <SidebarInset>
                     <HorizontalNav
-                        currentView="grid"
-                        onViewChange={() => { }}
-                        showViewToggle={false}
-                        onSearch={setSearchQuery}
                         onCreate={() => router.push("/shipments/new")}
                     />
 
                     <main className="flex-1 p-6 space-y-6 bg-gradient-to-br from-background via-background to-muted/20">
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="text-3xl font-bold">Shipments</h1>
-                                <p className="text-muted-foreground mt-1">
-                                    {totalCount} shipments found
-                                </p>
+                        <Tabs defaultValue="table" className="w-full space-y-6">
+                            {/* Header */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <h1 className="text-3xl font-bold">Shipments</h1>
+                                    <p className="text-muted-foreground mt-1">
+                                        {totalCount} shipments found
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3 w-full sm:w-auto">
+                                    <TabsList className="grid w-[200px] grid-cols-2">
+                                        <TabsTrigger value="table">Table</TabsTrigger>
+                                        <TabsTrigger value="grid">Grid</TabsTrigger>
+                                    </TabsList>
+                                    <Button onClick={() => router.push("/shipments/new")} size="sm" className="h-9">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Create
+                                    </Button>
+                                </div>
                             </div>
-                            <Button onClick={() => router.push("/shipments/new")} size="lg">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Shipment
-                            </Button>
-                        </div>
 
-                        {/* Table */}
-                        <Card className="border-border/50">
-                            <CardContent className="p-0">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="hover:bg-transparent border-b border-border/50">
-                                            <TableHead>Tracking #</TableHead>
-                                            <TableHead>Shipper</TableHead>
-                                            <TableHead>Carrier</TableHead>
-                                            <TableHead>Origin</TableHead>
-                                            <TableHead>Destination</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Priority</TableHead>
-                                            <TableHead className="text-right">Rate</TableHead>
-                                            <TableHead className="text-right">Weight</TableHead>
-                                            <TableHead>Est. Delivery</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {shipments.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
-                                                    No shipments found. Create your first shipment to get started.
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            shipments.map((shipment: Shipment, index: number) => (
-                                                <motion.tr
-                                                    key={shipment.id}
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ duration: 0.2, delay: index * 0.02 }}
-                                                    className={cn(
-                                                        "border-b border-border/30 transition-colors",
-                                                        shipment.flagged && "bg-destructive/5"
-                                                    )}
-                                                >
-                                                    <TableCell className="font-mono text-xs font-medium">
-                                                        {shipment.trackingNumber.slice(0, 12)}
-                                                    </TableCell>
-                                                    <TableCell className="font-medium">{shipment.shipperName}</TableCell>
-                                                    <TableCell>{shipment.carrierName}</TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {shipment.pickupLocation.city}, {shipment.pickupLocation.state}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={cn("text-xs font-medium", statusColors[shipment.status])}>
+                            <TabsContent value="table" className="mt-0">
+                                <Card className="border-border/50">
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="hover:bg-transparent border-b border-border/50">
+                                                    <TableHead>Tracking #</TableHead>
+                                                    <TableHead>Shipper</TableHead>
+                                                    <TableHead>Carrier</TableHead>
+                                                    <TableHead>Origin</TableHead>
+                                                    <TableHead>Destination</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Priority</TableHead>
+                                                    <TableHead className="text-right">Rate</TableHead>
+                                                    <TableHead className="text-right">Weight</TableHead>
+                                                    <TableHead className="text-right">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {shipments.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                                                            No shipments found. Create your first shipment to get started.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    shipments.map((shipment: Shipment, index: number) => (
+                                                        <motion.tr
+                                                            key={shipment.id}
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            transition={{ duration: 0.2, delay: index * 0.02 }}
+                                                            className={cn(
+                                                                "border-b border-border/30 transition-colors",
+                                                                shipment.flagged && "bg-destructive/5"
+                                                            )}
+                                                        >
+                                                            <TableCell className="font-mono text-xs font-medium">
+                                                                {shipment.trackingNumber.slice(0, 12)}
+                                                            </TableCell>
+                                                            <TableCell className="font-medium">{shipment.shipperName}</TableCell>
+                                                            <TableCell>{shipment.carrierName}</TableCell>
+                                                            <TableCell className="text-sm">
+                                                                {shipment.pickupLocation.city}, {shipment.pickupLocation.state}
+                                                            </TableCell>
+                                                            <TableCell className="text-sm">
+                                                                {shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className={cn("text-xs font-medium", statusColors[shipment.status])}>
+                                                                    {shipment.status.replace(/_/g, " ")}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="secondary" className={cn("text-xs", priorityColors[shipment.priority])}>
+                                                                    {shipment.priority}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-medium">
+                                                                {formatCurrency(shipment.rate)}
+                                                            </TableCell>
+                                                            <TableCell className="text-right tabular-nums">
+                                                                {shipment.weight.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                            <Edit className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="w-48">
+                                                                        <DropdownMenuItem asChild>
+                                                                            <Link href={`/shipments/edit/${shipment.id}`} className="flex items-center w-full cursor-pointer">
+                                                                                <Eye className="mr-2 h-4 w-4" />
+                                                                                View Details
+                                                                            </Link>
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem asChild>
+                                                                            <Link href={`/shipments/edit/${shipment.id}`} className="flex items-center w-full cursor-pointer">
+                                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                                Edit
+                                                                            </Link>
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => handleFlag(shipment)}>
+                                                                            <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
+                                                                            {shipment.flagged ? "Unflag" : "Flag"}
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => {
+                                                                                setSelectedShipment(shipment);
+                                                                                setIsDeleteDialogOpen(true);
+                                                                            }}
+                                                                            className="text-destructive focus:text-destructive"
+                                                                        >
+                                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                                            Delete
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </TableCell>
+                                                        </motion.tr>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="grid" className="mt-0">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {shipments.map((shipment: Shipment, index: number) => (
+                                        <motion.div
+                                            key={shipment.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.2, delay: index * 0.02 }}
+                                        >
+                                            <Card className={cn("h-full hover:shadow-lg transition-shadow duration-200", shipment.flagged && "border-destructive/50 bg-destructive/5")}>
+                                                <CardContent className="p-6 space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <Badge variant="outline" className={cn("font-mono", statusColors[shipment.status])}>
                                                             {shipment.status.replace(/_/g, " ")}
                                                         </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="secondary" className={cn("text-xs", priorityColors[shipment.priority])}>
-                                                            {shipment.priority}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-medium">
-                                                        {formatCurrency(shipment.rate)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right tabular-nums">
-                                                        {shipment.weight.toLocaleString()}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm text-muted-foreground">
-                                                        {formatDate(shipment.estimatedDelivery)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2">
                                                                     <Edit className="h-4 w-4" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-48">
-                                                                <DropdownMenuItem asChild>
-                                                                    <Link href={`/shipments/edit/${shipment.id}`} className="flex items-center w-full cursor-pointer">
-                                                                        <Eye className="mr-2 h-4 w-4" />
-                                                                        View Details
-                                                                    </Link>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => router.push(`/shipments/edit/${shipment.id}`)}>
+                                                                    <Eye className="mr-2 h-4 w-4" /> View Details
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem asChild>
-                                                                    <Link href={`/shipments/edit/${shipment.id}`} className="flex items-center w-full cursor-pointer">
-                                                                        <Edit className="mr-2 h-4 w-4" />
-                                                                        Edit
-                                                                    </Link>
+                                                                <DropdownMenuItem onClick={() => router.push(`/shipments/edit/${shipment.id}`)}>
+                                                                    <Edit className="mr-2 h-4 w-4" /> Edit
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem onClick={() => handleFlag(shipment)}>
-                                                                    <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
-                                                                    {shipment.flagged ? "Unflag" : "Flag"}
+                                                                    <Flag className="mr-2 h-4 w-4" /> {shipment.flagged ? "Unflag" : "Flag"}
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    onClick={() => {
-                                                                        setSelectedShipment(shipment);
-                                                                        setIsDeleteDialogOpen(true);
-                                                                    }}
-                                                                    className="text-destructive focus:text-destructive"
-                                                                >
-                                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                                    Delete
+                                                                <DropdownMenuItem onClick={() => { setSelectedShipment(shipment); setIsDeleteDialogOpen(true); }} className="text-destructive">
+                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
-                                                    </TableCell>
-                                                </motion.tr>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
+                                                    </div>
+
+                                                    <div>
+                                                        <h3 className="font-semibold text-lg">{shipment.trackingNumber}</h3>
+                                                        <p className="text-sm text-muted-foreground">{shipment.carrierName}</p>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                        <div>
+                                                            <p className="text-muted-foreground text-xs">Origin</p>
+                                                            <p className="font-medium truncate">{shipment.pickupLocation.city}, {shipment.pickupLocation.state}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-muted-foreground text-xs">Destination</p>
+                                                            <p className="font-medium truncate">{shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-4 border-t flex justify-between items-center text-sm">
+                                                        <div className="flex items-center text-muted-foreground">
+                                                            <Badge variant="secondary" className={cn("mr-2 text-xs", priorityColors[shipment.priority])}>
+                                                                {shipment.priority}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="font-semibold">
+                                                            {formatCurrency(shipment.rate)}
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
 
                         {/* Pagination */}
                         {totalPages > 1 && (
@@ -468,6 +553,6 @@ export default function ShipmentsPage() {
                     )}
                 </SidebarInset>
             </SidebarProvider>
-        </ProtectedRoute>
+        </ProtectedRoute >
     );
 }
