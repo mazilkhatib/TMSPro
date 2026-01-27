@@ -145,7 +145,6 @@ export default function ShipmentsPage() {
     }, [debouncedSearchTerm, statusFilter, priorityFilter, page]);
 
     // Fetch shipments
-    // Fetch shipments
     const {
         data: shipmentsData,
         loading: shipmentsLoading,
@@ -155,6 +154,31 @@ export default function ShipmentsPage() {
         variables: shipmentsQueryVars,
         fetchPolicy: "cache-and-network",
         notifyOnNetworkStatusChange: true
+    });
+
+    // Delete shipment mutation
+    const [deleteShipment, { loading: deleteLoading }] = useMutation<DeleteShipmentResponse>(DELETE_SHIPMENT, {
+        onCompleted: () => {
+            toast.success("Shipment deleted successfully");
+            setIsDeleteDialogOpen(false);
+            setSelectedShipment(null);
+            refetchShipments();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to delete shipment");
+        }
+    });
+
+    // Flag shipment mutation
+    const [flagShipment] = useMutation<FlagShipmentResponse>(FLAG_SHIPMENT, {
+        onCompleted: (data) => {
+            const isFlagged = data.flagShipment.flagged;
+            toast.success(isFlagged ? "Shipment flagged" : "Shipment unflagged");
+            refetchShipments();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to update shipment status");
+        }
     });
 
     // Get shipments and pagination info from response
