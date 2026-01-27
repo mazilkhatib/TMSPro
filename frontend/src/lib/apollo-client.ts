@@ -1,43 +1,60 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from } from "@apollo/client";
-import { setContext } from "@apollo/client/link/context";
+"use client";
 
-const httpLink = createHttpLink({
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client";
+
+function makeClient() {
+  const httpLink = new HttpLink({
     uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:4000/graphql",
     credentials: "include",
-});
+  });
 
-const authLink = setContext((_, { headers }) => {
-    // Get the authentication token from local storage if it exists
+  const authLink = new ApolloLink((operation, forward) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    return {
-        headers: {
-            ...headers,
-            authorization: token ? `Bearer ${token}` : "",
-        },
-    };
-});
+    operation.setContext({
+      headers: {
+        authorization: token ? `Bearer ${token}` : "",
+      },
+    });
 
-export const apolloClient = new ApolloClient({
-    link: from([authLink, httpLink]),
+    return forward(operation);
+  });
+
+  return new ApolloClient({
+    link: authLink.concat(httpLink),
     cache: new InMemoryCache({
-        typePolicies: {
-            Query: {
-                fields: {
-                    shipments: {
-                        // Merge paginated results
-                        keyArgs: ["filter", "sortBy", "sortOrder"],
-                        merge(existing, incoming) {
-                            return incoming;
-                        },
-                    },
-                },
+      typePolicies: {
+        Query: {
+          fields: {
+            shipments: {
+              keyArgs: ["filter", "sortBy", "sortOrder"],
+              merge(_, incoming) {
+                return incoming;
+              },
             },
+          },
         },
+      },
     }),
     defaultOptions: {
-        watchQuery: {
-            fetchPolicy: "cache-and-network",
-        },
+      watchQuery: {
+        fetchPolicy: "cache-and-network",
+      },
     },
-});
+  });
+}
+
+// Export a singleton client for client-side usage
+let apolloClientSingleton: ApolloClient | undefined;
+
+export function getApolloClient() {
+  if (typeof window === "undefined") {
+    // Server-side: always create a new client
+    return makeClient();
+  }
+  // Client-side: reuse the same client
+  if (!apolloClientSingleton) {
+    apolloClientSingleton = makeClient();
+  }
+  return apolloClientSingleton;
+}

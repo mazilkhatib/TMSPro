@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Using official @apollo/client-integration-nextjs package
+  // No special webpack configuration needed
 };
 
 export default nextConfig;

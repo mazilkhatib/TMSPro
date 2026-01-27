@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import {
     ChevronDown,
     LayoutDashboard,
@@ -59,55 +60,16 @@ const navMain: NavItem[] = [
         icon: Package,
         items: [
             { title: "All Shipments", url: "/shipments" },
-            { title: "Create New", url: "/shipments/new" },
-            { title: "In Transit", url: "/shipments?status=IN_TRANSIT" },
-            { title: "Delivered", url: "/shipments?status=DELIVERED" }
-        ]
-    },
-    {
-        title: "Carriers",
-        icon: Truck,
-        items: [
-            { title: "All Carriers", url: "/carriers" },
-            { title: "Add Carrier", url: "/carriers/new" }
-        ]
-    },
-    {
-        title: "Locations",
-        url: "/locations",
-        icon: MapPin
-    },
-    {
-        title: "Reports",
-        icon: BarChart3,
-        items: [
-            { title: "Overview", url: "/reports" },
-            { title: "Performance", url: "/reports/performance" },
-            { title: "Costs", url: "/reports/costs" }
+            { title: "Create New", url: "/shipments/new" }
         ]
     }
 ];
 
-const navSecondary: NavItem[] = [
-    {
-        title: "Users",
-        url: "/users",
-        icon: Users
-    },
-    {
-        title: "Documents",
-        url: "/documents",
-        icon: FileText
-    },
-    {
-        title: "Settings",
-        url: "/settings",
-        icon: Settings
-    }
-];
+const navSecondary: NavItem[] = [];
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const { user, logout } = useAuth();
 
     return (
         <Sidebar collapsible="icon">
@@ -188,47 +150,31 @@ export function AppSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
-
-                {/* Secondary Navigation */}
-                <SidebarGroup>
-                    <SidebarGroupLabel>Settings</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {navSecondary.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === item.url}
-                                        tooltip={item.title}
-                                    >
-                                        <Link href={item.url!}>
-                                            <item.icon className="h-4 w-4" />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
             </SidebarContent>
 
             {/* Footer with User */}
             <SidebarFooter className="border-t border-sidebar-border">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" tooltip="John Doe (Admin)">
+                        <SidebarMenuButton size="lg" tooltip={`${user?.name || 'User'} (${user?.role || 'Guest'})`}>
                             <Avatar className="h-8 w-8">
                                 <AvatarImage src="/avatar.jpg" />
                                 <AvatarFallback className="bg-gradient-to-br from-chart-1 to-chart-2 text-white text-sm">
-                                    JD
+                                    {user?.name?.substring(0, 2).toUpperCase() || 'U'}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col gap-0.5 leading-none">
-                                <span className="font-medium">John Doe</span>
-                                <span className="text-xs text-muted-foreground">Admin</span>
+                                <span className="font-medium">{user?.name || 'User'}</span>
+                                <span className="text-xs text-muted-foreground capitalize">{user?.role || 'Guest'}</span>
                             </div>
-                            <LogOut className="ml-auto h-4 w-4 text-muted-foreground" />
+                            <LogOut
+                                className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    logout();
+                                }}
+                            />
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

@@ -73,3 +73,14 @@ export interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
 }
+
+// Statistics types
+export interface ShipmentStats {
+    total: number;
+    pending: number;
+    inTransit: number;
+    delivered: number;
+    cancelled: number;
+    flagged: number;
+    totalRevenue: number;
+}

@@ -111,6 +111,7 @@ export function TileView({
     return (
         <div className="space-y-6">
             <motion.div
+                key={`page-${page}`}
                 variants={container}
                 initial="hidden"
                 animate="show"

@@ -3,6 +3,47 @@ import jwt from "jsonwebtoken";
 import { Shipment, User, IShipment, IUser } from "../models";
 import { Context } from "../types";
 
+// Helper to safely format dates to ISO string
+const toISO = (date: any): string | null => {
+    if (!date) return null;
+    try {
+        const d = new Date(date);
+        // If valid date, return ISO string
+        if (!isNaN(d.getTime())) return d.toISOString();
+
+        // Handle stringified timestamp (e.g. "1769...")
+        if (typeof date === 'string' && /^\d+$/.test(date)) {
+            const numDate = new Date(parseInt(date, 10));
+            if (!isNaN(numDate.getTime())) return numDate.toISOString();
+        }
+    } catch (e) {
+        console.error("Date serialization error:", e);
+    }
+    return null;
+};
+
+// Helper: Serialize Shipment
+const serializeShipment = (shipment: any) => ({
+    ...shipment,
+    id: shipment._id ? shipment._id.toString() : shipment.id,
+    estimatedDelivery: toISO(shipment.estimatedDelivery),
+    actualDelivery: toISO(shipment.actualDelivery),
+    createdAt: toISO(shipment.createdAt),
+    updatedAt: toISO(shipment.updatedAt),
+    createdBy: typeof shipment.createdBy === 'object' && shipment.createdBy !== null
+        ? { ...shipment.createdBy, id: shipment.createdBy._id?.toString() }
+        : shipment.createdBy
+});
+
+// Helper: Serialize User
+const serializeUser = (user: any) => ({
+    ...user,
+    id: user._id ? user._id.toString() : user.id,
+    lastLogin: toISO(user.lastLogin),
+    createdAt: toISO(user.createdAt),
+    updatedAt: toISO(user.updatedAt)
+});
+
 // Helper to generate tracking number
 function generateTrackingNumber(): string {
     const prefix = "TMS";
@@ -109,10 +150,7 @@ export const resolvers = {
             const totalPages = Math.ceil(total / limit);
 
             return {
-                shipments: shipments.map((s: any) => ({
-                    ...s,
-                    id: s._id.toString()
-                })),
+                shipments: shipments.map((s: any) => serializeShipment(s)),
                 pagination: {
                     page,
                     limit,
@@ -132,7 +170,7 @@ export const resolvers = {
                     extensions: { code: "NOT_FOUND" }
                 });
             }
-            return { ...shipment, id: (shipment as any)._id.toString() };
+            return serializeShipment(shipment);
         },
 
         // Get dashboard statistics
@@ -178,16 +216,16 @@ export const resolvers = {
         // Get current user
         me: async (_: any, __: any, context: Context) => {
             if (!context.user) return null;
-            const user = await User.findById(context.user.userId);
-            return user ? { ...user.toObject(), id: user._id.toString() } : null;
+            const user = await User.findById(context.user.userId).lean();
+            return user ? serializeUser(user) : null;
         },
 
         // Get all users (admin only)
         users: async (_: any, __: any, context: Context) => {
             checkAuth(context, "admin");
             const users = await User.find().lean();
-            return users.map((u: any) => ({ ...u, id: u._id.toString() }));
-        }
+            return users.map((u: any) => serializeUser(u));
+        },
     },
 
     Mutation: {
@@ -204,10 +242,11 @@ export const resolvers = {
             await user.save();
 
             const token = generateToken(user);
+            const userObj = user.toObject();
 
             return {
                 token,
-                user: { ...user.toObject(), id: user._id.toString() }
+                user: serializeUser(userObj)
             };
         },
 
@@ -234,10 +273,11 @@ export const resolvers = {
             await user.save();
 
             const token = generateToken(user);
+            const userObj = user.toObject();
 
             return {
                 token,
-                user: { ...user.toObject(), id: user._id.toString(), password: undefined }
+                user: { ...serializeUser(userObj), password: undefined }
             };
         },
 
@@ -259,7 +299,7 @@ export const resolvers = {
 
             await shipment.save();
 
-            return { ...shipment.toObject(), id: shipment._id.toString() };
+            return serializeShipment(shipment.toObject());
         },
 
         // Update shipment
@@ -282,7 +322,7 @@ export const resolvers = {
                 });
             }
 
-            return { ...shipment.toObject(), id: shipment._id.toString() };
+            return serializeShipment(shipment.toObject());
         },
 
         // Delete shipment (admin only)
@@ -323,7 +363,7 @@ export const resolvers = {
                 });
             }
 
-            return { ...shipment.toObject(), id: shipment._id.toString() };
+            return serializeShipment(shipment.toObject());
         }
     },
 
@@ -331,11 +371,11 @@ export const resolvers = {
     Shipment: {
         createdBy: async (parent: any) => {
             if (parent.createdBy && typeof parent.createdBy === "object") {
-                return { ...parent.createdBy, id: parent.createdBy._id?.toString() };
+                return serializeUser({ ...parent.createdBy, id: parent.createdBy._id?.toString() });
             }
             if (!parent.createdBy) return null;
             const user = await User.findById(parent.createdBy).lean();
-            return user ? { ...user, id: (user as any)._id.toString() } : null;
+            return user ? serializeUser(user) : null;
         }
     }
 };

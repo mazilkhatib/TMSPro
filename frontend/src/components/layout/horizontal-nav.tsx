@@ -17,6 +17,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "../theme-toggle";
 
 interface NavItem {
@@ -37,15 +47,18 @@ interface HorizontalNavProps {
     currentView?: "grid" | "tile";
     showViewToggle?: boolean;
     onSearch?: (query: string) => void;
+    onCreate?: () => void;
 }
 
 export function HorizontalNav({
     onViewChange,
     currentView = "tile",
     showViewToggle = false,
-    onSearch
+    onSearch,
+    onCreate
 }: HorizontalNavProps) {
     const pathname = usePathname();
+    const { user, logout } = useAuth();
     const [searchQuery, setSearchQuery] = React.useState("");
 
     const handleSearch = (e: React.FormEvent) => {
@@ -117,7 +130,7 @@ export function HorizontalNav({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button size="sm" className="hidden sm:flex gap-2">
+                        <Button size="sm" className="hidden sm:flex gap-2" onClick={onCreate}>
                             <Plus className="h-4 w-4" />
                             <span className="hidden lg:inline">New Shipment</span>
                         </Button>
@@ -140,6 +153,39 @@ export function HorizontalNav({
                     <TooltipContent>Notifications</TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+
+            {/* User Avatar Dropdown */}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full ml-2 h-8 w-8 border border-border/50">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src="/avatar.jpg" />
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs">
+                                {user?.name?.substring(0, 2).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem>
+                            <span className="font-medium">{user?.name || 'User'}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                            <span className="text-xs text-muted-foreground">{user?.email || 'user@example.com'}</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        className="text-destructive focus:text-destructive cursor-pointer"
+                        onClick={() => logout()}
+                    >
+                        Log out
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Theme Toggle */}
             <ThemeToggle />
