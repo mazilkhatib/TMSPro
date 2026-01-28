@@ -1,6 +1,7 @@
 "use client";
 
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client";
+import { getSession } from "next-auth/react";
 
 function makeClient() {
   const httpLink = new HttpLink({
@@ -9,15 +10,29 @@ function makeClient() {
   });
 
   const authLink = new ApolloLink((operation, forward) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    return new Observable((observer) => {
+      getSession()
+        .then((session) => {
+          const token = session?.accessToken;
 
-    operation.setContext({
-      headers: {
-        authorization: token ? `Bearer ${token}` : "",
-      },
+          operation.setContext({
+            headers: {
+              authorization: token ? `Bearer ${token}` : "",
+            },
+          });
+
+          const subscriber = {
+            next: observer.next.bind(observer),
+            error: observer.error.bind(observer),
+            complete: observer.complete.bind(observer),
+          };
+
+          forward(operation).subscribe(subscriber);
+        })
+        .catch((err) => {
+          observer.error(err);
+        });
     });
-
-    return forward(operation);
   });
 
   return new ApolloClient({
@@ -43,6 +58,9 @@ function makeClient() {
     },
   });
 }
+
+// Need to import Observable for the above logic
+import { Observable } from "@apollo/client/utilities";
 
 // Export a singleton client for client-side usage
 let apolloClientSingleton: ApolloClient | undefined;

@@ -125,7 +125,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
         <Button
           type="submit"
-          className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -156,7 +156,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           variant="outline"
           onClick={() => handleDemoLogin('admin')}
           disabled={isLoading}
-          className="h-auto py-3 flex flex-col gap-1 items-start hover:bg-muted/50 hover:border-primary/50 transition-all"
+          className="h-auto py-3 flex flex-col gap-1 items-start hover:bg-muted/50 hover:border-primary/50 transition-all cursor-pointer"
         >
           <span className="font-semibold text-xs flex items-center gap-1">
             Admin
@@ -168,7 +168,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           variant="outline"
           onClick={() => handleDemoLogin('employee')}
           disabled={isLoading}
-          className="h-auto py-3 flex flex-col gap-1 items-start hover:bg-muted/50 hover:border-primary/50 transition-all"
+          className="h-auto py-3 flex flex-col gap-1 items-start hover:bg-muted/50 hover:border-primary/50 transition-all cursor-pointer"
         >
           <span className="font-semibold text-xs flex items-center gap-1">
             Employee

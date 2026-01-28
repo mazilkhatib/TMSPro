@@ -147,7 +147,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             <button
               type="button"
               onClick={onLoginClick}
-              className="text-primary hover:underline font-medium"
+              className="text-primary hover:underline font-medium cursor-pointer"
             >
               Sign in
             </button>

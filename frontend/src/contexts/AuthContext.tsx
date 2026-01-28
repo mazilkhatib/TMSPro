@@ -1,9 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useMutation } from "@apollo/client/react";
-import { LOGIN, REGISTER } from "@/graphql/mutations";
-import { GET_ME } from "@/graphql/queries";
+import { REGISTER } from "@/graphql/mutations";
 import type { User, AuthState } from "@/types";
 
 interface AuthContextType extends AuthState {
@@ -16,95 +16,48 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// GraphQL mutation response types
-interface AuthPayload {
-  token: string;
-  user: User;
-}
-
-interface LoginResponse {
-  login: AuthPayload;
-}
-
 interface RegisterResponse {
-  register: AuthPayload;
+  register: {
+    token: string;
+    user: User;
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    token: null,
-    isAuthenticated: false,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
   const [error, setError] = useState<string | undefined>();
-
-  const [loginMutation] = useMutation<LoginResponse>(LOGIN);
   const [registerMutation] = useMutation<RegisterResponse>(REGISTER);
 
-  // Initialize auth state from localStorage on mount
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userJson = localStorage.getItem("user");
+  // Map NextAuth session to our AuthState
+  const authState: AuthState = {
+    user: session?.user as User | null,
+    token: session?.accessToken || null,
+    isAuthenticated: status === "authenticated",
+  };
 
-    if (token && userJson) {
-      try {
-        const user = JSON.parse(userJson);
-        setAuthState({
-          user,
-          token,
-          isAuthenticated: true,
-        });
-      } catch (err) {
-        // Invalid user data, clear storage
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = useCallback(async (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setError(undefined);
-    setIsLoading(true);
-
     try {
-      const { data } = await loginMutation({
-        variables: {
-          input: { email, password },
-        },
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       });
 
-      if (data?.login) {
-        const { token, user } = data.login;
-
-        // Store in localStorage
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-
-        // Update state
-        setAuthState({
-          user,
-          token,
-          isAuthenticated: true,
-        });
-      } else {
-        throw new Error("Login failed");
+      if (result?.error) {
+        throw new Error(result.error);
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Failed to login. Please check your credentials.";
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
-  }, [loginMutation]);
+  };
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string) => {
     setError(undefined);
-    setIsLoading(true);
-
     try {
+      // 1. Register via GraphQL
       const { data } = await registerMutation({
         variables: {
           input: { name, email, password },
@@ -112,55 +65,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (data?.register) {
-        const { token, user } = data.register;
-
-        // Store in localStorage
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-
-        // Update state
-        setAuthState({
-          user,
-          token,
-          isAuthenticated: true,
+        // 2. Auto-login via NextAuth
+        const result = await signIn("credentials", {
+          redirect: false,
+          email,
+          password,
         });
+
+        if (result?.error) {
+          throw new Error("Registration successful but auto-login failed");
+        }
       } else {
         throw new Error("Registration failed");
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Failed to register. Please try again.";
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to register. Please try again.";
       setError(errorMessage);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
-  }, [registerMutation]);
+  };
 
-  const logout = useCallback(() => {
-    // Clear localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    // Clear Apollo cache
-    // Note: The client will be reset on next page load
-
-    // Update state
-    setAuthState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-    });
-
-    // Optionally redirect to login page
-    // router.push("/login");
-  }, []);
+  const logout = () => {
+    signOut({ redirect: true, callbackUrl: "/login" });
+  };
 
   const value: AuthContextType = {
     ...authState,
     login,
     register,
     logout,
-    isLoading,
+    isLoading: status === "loading",
     error,
   };
 
