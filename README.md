@@ -43,13 +43,21 @@ npm install
 
 ### 2. Configure Environment Variables
 
-Edit `backend/.env`:
-```env
-PORT=4000
-MONGODB_URI=mongodb://localhost:27017/tms
-JWT_SECRET=your-secret-key-here
-FRONTEND_URL=http://localhost:3000
+**Backend:**
+Copy `backend/.env.example` to `backend/.env`:
+```bash
+cd backend
+cp .env.example .env
 ```
+Update `JWT_SECRET` with a secure key.
+
+**Frontend:**
+Copy `frontend/.env.example` to `frontend/.env.local`:
+```bash
+cd frontend
+cp .env.example .env.local
+```
+Update `NEXTAUTH_SECRET` with a secure key (generate using `openssl rand -base64 32`).
 
 ### 3. Seed the Database
 
@@ -86,15 +94,14 @@ App runs at http://localhost:3000
 - `shipment(id)` - Single shipment details
 - `shipmentStats` - Dashboard statistics
 - `me` - Current authenticated user
-- `users` - All users (admin only)
 
 ### Mutations
 - `register(input)` - Create new account
 - `login(input)` - Authenticate user
 - `createShipment(input)` - Create shipment (authenticated)
-- `updateShipment(id, input)` - Update shipment (authenticated)
+- `updateShipment(id, input)` - Update shipment (admin only)
 - `deleteShipment(id)` - Delete shipment (admin only)
-- `flagShipment(id, flagged)` - Flag/unflag shipment (authenticated)
+- `flagShipment(id, flagged)` - Flag/unflag shipment (admin only)
 
 ## 🔐 Role-Based Access
 
@@ -102,10 +109,9 @@ App runs at http://localhost:3000
 |---------|-------|----------|
 | View Shipments | ✅ | ✅ |
 | Create Shipment | ✅ | ✅ |
-| Update Shipment | ✅ | ✅ |
-| Flag Shipment | ✅ | ✅ |
+| Update Shipment | ✅ | ❌ |
+| Flag Shipment | ✅ | ❌ |
 | Delete Shipment | ✅ | ❌ |
-| View All Users | ✅ | ❌ |
 
 ## 🏗️ Tech Stack
 
@@ -634,7 +640,7 @@ mutation CreateShipment {
 }
 ```
 
-### 2. Update a Shipment
+### 2. Update a Shipment (Admin Only)
 
 ```graphql
 mutation UpdateShipment {
@@ -655,7 +661,7 @@ mutation UpdateShipment {
 }
 ```
 
-### 3. Flag/Unflag a Shipment
+### 3. Flag/Unflag a Shipment (Admin Only)
 
 **Flag:**
 ```graphql
