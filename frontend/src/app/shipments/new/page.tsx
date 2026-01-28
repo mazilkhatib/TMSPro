@@ -267,16 +267,16 @@ export default function NewShipmentPage() {
 
 
     const renderBasicInfo = () => (
-        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm ring-1 ring-border/50">
-            <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border/50 pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                    <div className="p-2.5 rounded-xl bg-primary/10 ring-1 ring-primary/20 shadow-inner">
-                        <Package className="w-6 h-6 text-primary" />
+        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm ring-1 ring-border/50 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border/50 py-5 px-6">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                        <Package className="w-5 h-5 text-primary" />
                     </div>
                     Basic Information
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8 pt-8 px-6 lg:px-8">
+            <CardContent className="space-y-6 pt-6 px-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <FormField
                         label="Shipper Name"
@@ -365,16 +365,16 @@ export default function NewShipmentPage() {
     );
 
     const renderShipmentDetails = () => (
-        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm ring-1 ring-border/50">
-            <CardHeader className="bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-transparent border-b border-border/50 pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                    <div className="p-2.5 rounded-xl bg-blue-500/10 ring-1 ring-blue-500/20 shadow-inner">
-                        <CalendarIcon className="w-6 h-6 text-blue-500" />
+        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm ring-1 ring-border/50 overflow-hidden rounded-xl">
+            <CardHeader className="bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-transparent border-b border-border/50 py-4 px-6">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold">
+                    <div className="p-2 rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20">
+                        <CalendarIcon className="w-5 h-5 text-blue-500" />
                     </div>
                     Shipment Details
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8 pt-8 px-6 lg:px-8">
+            <CardContent className="space-y-6 pt-6 px-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <FormField
                         label="Shipping Rate"
@@ -455,16 +455,16 @@ export default function NewShipmentPage() {
     );
 
     const renderLocationField = (prefix: "pickupLocation" | "deliveryLocation", title: string, colorClass: string, iconColorClass: string) => (
-        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm ring-1 ring-border/50">
-            <CardHeader className={`bg-gradient-to-r ${colorClass} border-b border-border/50 pb-6`}>
-                <CardTitle className="flex items-center gap-3 text-xl">
-                    <div className={`p-2.5 rounded-xl bg-background/50 ring-1 ring-black/5 shadow-inner`}>
-                        <MapPin className={`w-6 h-6 ${iconColorClass}`} />
+        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm ring-1 ring-border/50 overflow-hidden rounded-xl">
+            <CardHeader className={`bg-gradient-to-r ${colorClass} border-b border-border/50 py-4 px-6`}>
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold">
+                    <div className={`p-2 rounded-lg bg-background/60 ring-1 ring-black/5`}>
+                        <MapPin className={`w-5 h-5 ${iconColorClass}`} />
                     </div>
                     {title}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8 pt-8 px-6 lg:px-8">
+            <CardContent className="space-y-6 pt-6 px-6">
                 <FormField
                     label="Street Address"
                     required
@@ -653,6 +653,31 @@ export default function NewShipmentPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Confirmation Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent rounded-xl p-5 border border-emerald-500/20"
+                >
+                    <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-full bg-emerald-500/20 flex-shrink-0">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="font-semibold text-base">Ready to Create Shipment</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Please review all the details above before submitting. Once created, a unique tracking number will be generated for this shipment.
+                            </p>
+                            <div className="flex items-center gap-2 mt-3 text-sm text-emerald-600 font-medium">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    Click "Create Shipment" below to proceed
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
         );
     };
@@ -690,37 +715,64 @@ export default function NewShipmentPage() {
                         showBackButton
                         onBack={() => router.back()}
                     />
-                    <div className="flex items-center justify-between px-6 lg:px-10 py-6">
-                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                            Create New Shipment
-                        </h1>
-                        <AnimatePresence>
-                            {hasUnsavedChanges && (
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    className="flex items-center gap-2 text-xs font-medium text-amber-600 bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20"
+                    {/* Premium Header with gradient accent */}
+                    <div className="relative px-6 lg:px-10 py-5 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-blue-500/5" />
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+
+                        <div className="relative flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <motion.h1
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-2xl font-bold tracking-tight"
                                 >
-                                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                                    Draft Saved
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    Create New Shipment
+                                </motion.h1>
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="text-sm text-muted-foreground"
+                                >
+                                    Step {currentStep + 1} of {steps.length} — {steps[currentStep]?.title}
+                                </motion.p>
+                            </div>
+                            <AnimatePresence>
+                                {hasUnsavedChanges && (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                                        exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                                        className="flex items-center gap-2 text-xs font-medium text-amber-600 bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-3 py-1.5 rounded-full border border-amber-500/20 shadow-sm backdrop-blur-sm"
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                        Draft Saved
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
-                    <main className="flex-1 px-6 lg:px-10 pb-6 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
+                    <main className="flex-1 px-6 lg:px-10 mt-10 pb-8 bg-gradient-to-b from-transparent via-background to-background">
                         <div className="max-w-5xl mx-auto">
                             <form onSubmit={form.handleSubmit(onSubmit)}>
                                 <MultiStepForm
                                     steps={steps}
                                     currentStep={currentStep}
                                     onStepClick={handleStepClick}
-                                    className="mb-12"
+                                    className="mb-10"
                                 >
-                                    <div className="mt-8">
+                                    <motion.div
+                                        key={currentStep}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        className="mt-8"
+                                    >
                                         {renderStep()}
-                                    </div>
+                                    </motion.div>
                                 </MultiStepForm>
 
                                 <StepNavigation

@@ -126,28 +126,52 @@ export function TileView({
                     <motion.div key={shipment.id} variants={item}>
                         <Card
                             className={cn(
-                                "h-full hover:shadow-lg transition-shadow duration-200 cursor-pointer",
-                                shipment.flagged && "border-destructive/50 bg-destructive/5"
+                                "group relative h-full overflow-hidden cursor-pointer transition-all duration-300",
+                                "bg-gradient-to-br from-background/95 via-background/90 to-background/80 backdrop-blur-xl",
+                                "border border-border/50 hover:border-primary/30",
+                                "shadow-sm hover:shadow-xl hover:shadow-primary/5",
+                                "hover:-translate-y-1",
+                                shipment.flagged && "border-destructive/50 bg-gradient-to-br from-destructive/5 via-background/90 to-background/80"
                             )}
                             onClick={() => onSelectShipment(shipment)}
                         >
-                            <CardContent className="p-3 sm:p-4 space-y-2">
+                            {/* Gradient accent bar at top */}
+                            <div className={cn(
+                                "absolute top-0 left-0 right-0 h-1 opacity-80",
+                                shipment.status === "DELIVERED" && "bg-gradient-to-r from-green-500 to-emerald-500",
+                                shipment.status === "IN_TRANSIT" && "bg-gradient-to-r from-purple-500 to-indigo-500",
+                                shipment.status === "PENDING" && "bg-gradient-to-r from-yellow-500 to-amber-500",
+                                shipment.status === "PICKED_UP" && "bg-gradient-to-r from-blue-500 to-cyan-500",
+                                shipment.status === "OUT_FOR_DELIVERY" && "bg-gradient-to-r from-orange-500 to-red-400",
+                                shipment.status === "CANCELLED" && "bg-gradient-to-r from-red-500 to-rose-500",
+                                shipment.status === "ON_HOLD" && "bg-gradient-to-r from-gray-400 to-gray-500"
+                            )} />
+
+                            <CardContent className="p-4 sm:p-5 space-y-4">
+                                {/* Header: Status + Actions */}
                                 <div className="flex justify-between items-start">
-                                    <Badge variant="outline" className={cn("font-mono", statusColors[shipment.status])}>
-                                        {shipment.status.replace(/_/g, " ")}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn(
+                                            "w-2.5 h-2.5 rounded-full ring-2 ring-offset-2 ring-offset-background",
+                                            statusDotColors[shipment.status],
+                                            (shipment.status === "IN_TRANSIT" || shipment.status === "OUT_FOR_DELIVERY") && "animate-pulse"
+                                        )} />
+                                        <Badge variant="outline" className={cn("font-medium text-xs px-2.5 py-0.5", statusColors[shipment.status])}>
+                                            {shipment.status.replace(/_/g, " ")}
+                                        </Badge>
+                                    </div>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 -mr-2 -mt-2"
+                                                className="h-8 w-8 -m-1 text-muted-foreground hover:text-foreground"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
+                                        <DropdownMenuContent align="end" className="w-48">
                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectShipment(shipment); }}>
                                                 <Eye className="mr-2 h-4 w-4" /> View Details
                                             </DropdownMenuItem>
@@ -162,7 +186,7 @@ export function TileView({
                                                         {shipment.flagged ? "Unflag" : "Flag"}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(shipment); }} className="text-destructive">
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(shipment); }} className="text-destructive focus:text-destructive">
                                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                     </DropdownMenuItem>
                                                 </>
@@ -171,30 +195,55 @@ export function TileView({
                                     </DropdownMenu>
                                 </div>
 
-                                <div>
-                                    <h3 className="font-semibold text-lg">{shipment.trackingNumber}</h3>
-                                    <p className="text-sm text-muted-foreground">{shipment.carrierName}</p>
+                                {/* Tracking Info */}
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
+                                        {shipment.trackingNumber}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <Truck className="h-3.5 w-3.5" />
+                                        {shipment.carrierName}
+                                    </p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Origin</p>
-                                        <p className="font-medium truncate">{shipment.pickupLocation.city}, {shipment.pickupLocation.state}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Destination</p>
-                                        <p className="font-medium truncate">{shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}</p>
+                                {/* Route Visualization */}
+                                <div className="relative py-2">
+                                    <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-primary/40 via-muted to-primary/40 -translate-y-1/2" />
+                                    <div className="relative flex justify-between items-center">
+                                        <div className="bg-background px-2 flex items-center gap-1.5">
+                                            <div className="w-6 h-6 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                                <MapPin className="h-3 w-3 text-primary" />
+                                            </div>
+                                            <span className="text-xs font-semibold truncate max-w-[70px]">{shipment.pickupLocation.city}</span>
+                                        </div>
+                                        <div className="bg-background px-1">
+                                            <Package className="h-4 w-4 text-muted-foreground/50" />
+                                        </div>
+                                        <div className="bg-background px-2 flex items-center gap-1.5">
+                                            <span className="text-xs font-semibold truncate max-w-[70px] text-right">{shipment.deliveryLocation.city}</span>
+                                            <div className="w-6 h-6 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                                                <MapPin className="h-3 w-3 text-green-600" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t flex justify-between items-center text-sm">
-                                    <div className="flex items-center text-muted-foreground">
-                                        <Badge variant="secondary" className={cn("mr-2 text-xs", priorityColors[shipment.priority])}>
-                                            {shipment.priority}
-                                        </Badge>
-                                    </div>
-                                    <div className="font-semibold">
-                                        {formatCurrency(shipment.rate)}
+                                {/* Footer: Priority + Rate */}
+                                <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                                    <Badge
+                                        variant="secondary"
+                                        className={cn(
+                                            "text-xs font-semibold px-2.5 py-1",
+                                            priorityColors[shipment.priority],
+                                            shipment.priority === "URGENT" && "animate-pulse"
+                                        )}
+                                    >
+                                        {shipment.priority}
+                                    </Badge>
+                                    <div className="text-right">
+                                        <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                                            {formatCurrency(shipment.rate)}
+                                        </span>
                                     </div>
                                 </div>
                             </CardContent>

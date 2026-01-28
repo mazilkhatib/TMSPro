@@ -80,8 +80,8 @@ export default function EditShipmentPage() {
         defaultValues: {
             shipperName: "",
             carrierName: "",
-            status: "PENDING",
-            priority: "MEDIUM",
+            status: "" as any, // Will be populated from server data
+            priority: "" as any, // Will be populated from server data
             rate: "",
             weight: "",
             estimatedDelivery: "",
@@ -104,20 +104,27 @@ export default function EditShipmentPage() {
         }
     }, [queryError, router]);
 
+    const [dataLoaded, setDataLoaded] = useState(false);
+
     useEffect(() => {
         if (shipmentData?.shipment) {
             const s = shipmentData.shipment;
-            form.reset({
-                shipperName: s.shipperName,
-                carrierName: s.carrierName,
-                status: s.status,
-                priority: s.priority,
-                rate: s.rate.toString(),
-                weight: s.weight.toString(),
-                estimatedDelivery: s.estimatedDelivery ? new Date(s.estimatedDelivery).toISOString().split('T')[0] : "",
-                actualDelivery: s.actualDelivery ? new Date(s.actualDelivery).toISOString().split('T')[0] : "",
-                notes: s.notes || ""
-            });
+            // Use setTimeout to ensure the form update happens after React's render cycle
+            // This fixes the Select component not properly receiving values
+            setTimeout(() => {
+                form.reset({
+                    shipperName: s.shipperName,
+                    carrierName: s.carrierName,
+                    status: s.status,
+                    priority: s.priority,
+                    rate: s.rate.toString(),
+                    weight: s.weight.toString(),
+                    estimatedDelivery: s.estimatedDelivery ? new Date(s.estimatedDelivery).toISOString().split('T')[0] : "",
+                    actualDelivery: s.actualDelivery ? new Date(s.actualDelivery).toISOString().split('T')[0] : "",
+                    notes: s.notes || ""
+                }, { keepDefaultValues: false });
+                setDataLoaded(true);
+            }, 0);
         }
     }, [shipmentData, form]);
 
@@ -230,23 +237,29 @@ export default function EditShipmentPage() {
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <Select
-                                                value={form.watch("status")}
-                                                onValueChange={(value) => form.setValue("status", value as ShipmentStatus, { shouldDirty: true })}
-                                            >
-                                                <SelectTrigger className="w-full h-12 text-lg font-medium">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="PENDING">Pending</SelectItem>
-                                                    <SelectItem value="PICKED_UP">Picked Up</SelectItem>
-                                                    <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-                                                    <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
-                                                    <SelectItem value="DELIVERED">Delivered</SelectItem>
-                                                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                                                    <SelectItem value="ON_HOLD">On Hold</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                            <Controller
+                                                control={form.control}
+                                                name="status"
+                                                render={({ field }) => (
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={(value) => field.onChange(value)}
+                                                    >
+                                                        <SelectTrigger className="w-full h-12 text-lg font-medium">
+                                                            <SelectValue placeholder="Select status" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="PENDING">Pending</SelectItem>
+                                                            <SelectItem value="PICKED_UP">Picked Up</SelectItem>
+                                                            <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
+                                                            <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
+                                                            <SelectItem value="DELIVERED">Delivered</SelectItem>
+                                                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                                                            <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
                                         </CardContent>
                                     </Card>
 
@@ -263,20 +276,26 @@ export default function EditShipmentPage() {
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <Select
-                                                value={form.watch("priority")}
-                                                onValueChange={(value) => form.setValue("priority", value as ShipmentPriority, { shouldDirty: true })}
-                                            >
-                                                <SelectTrigger className="w-full h-12">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="LOW">Low Priority</SelectItem>
-                                                    <SelectItem value="MEDIUM">Medium Priority</SelectItem>
-                                                    <SelectItem value="HIGH">High Priority</SelectItem>
-                                                    <SelectItem value="URGENT">Urgent Priority</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                            <Controller
+                                                control={form.control}
+                                                name="priority"
+                                                render={({ field }) => (
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={(value) => field.onChange(value)}
+                                                    >
+                                                        <SelectTrigger className="w-full h-12">
+                                                            <SelectValue placeholder="Select priority" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="LOW">Low Priority</SelectItem>
+                                                            <SelectItem value="MEDIUM">Medium Priority</SelectItem>
+                                                            <SelectItem value="HIGH">High Priority</SelectItem>
+                                                            <SelectItem value="URGENT">Urgent Priority</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
                                         </CardContent>
                                     </Card>
                                 </div>

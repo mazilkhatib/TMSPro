@@ -59,6 +59,16 @@ const statusColors: Record<ShipmentStatus, string> = {
     ON_HOLD: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/30"
 };
 
+const statusDotColors: Record<ShipmentStatus, string> = {
+    PENDING: "bg-yellow-500",
+    PICKED_UP: "bg-blue-500",
+    IN_TRANSIT: "bg-purple-500",
+    OUT_FOR_DELIVERY: "bg-orange-500",
+    DELIVERED: "bg-green-500",
+    CANCELLED: "bg-red-500",
+    ON_HOLD: "bg-gray-500"
+};
+
 const statusIcons: Record<ShipmentStatus, React.ReactNode> = {
     PENDING: <Clock className="h-3.5 w-3.5" />,
     PICKED_UP: <Package className="h-3.5 w-3.5" />,
@@ -111,57 +121,65 @@ export function DetailModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={() => onClose()}>
-            <DialogContent showCloseButton={false} className="max-w-2xl p-0 overflow-hidden bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl">
-                {/* Header with Glassmorphism */}
+            <DialogContent showCloseButton={false} className="max-w-2xl p-0 overflow-hidden bg-background/95 backdrop-blur-2xl border-border/40 shadow-2xl rounded-2xl">
+                {/* Premium Gradient Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="relative p-6 pb-4 bg-gradient-to-b from-muted/50 to-transparent border-b border-border/40"
+                    className="relative px-6 pt-6 pb-5 overflow-hidden"
                 >
-                    <DialogHeader>
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-1.5">
-                                <div className="flex items-center gap-2">
-                                    <DialogTitle className="text-2xl font-bold tracking-tight">
+                    {/* Animated gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-purple-500/5 to-blue-500/10" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/15 via-transparent to-transparent" />
+
+                    <DialogHeader className="relative z-10">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2 flex-1 min-w-0">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <DialogTitle className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                                         {shipment.shipperName}
                                     </DialogTitle>
                                     {shipment.flagged && (
-                                        <Badge variant="destructive" className="h-5 px-1.5 gap-0.5 text-[10px] uppercase tracking-wider">
+                                        <Badge variant="destructive" className="h-6 px-2 gap-1 text-[10px] uppercase tracking-wider font-bold animate-pulse">
                                             <Flag className="h-3 w-3 fill-current" />
                                             Flagged
                                         </Badge>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-2 text-muted-foreground font-mono text-sm group cursor-pointer hover:text-foreground transition-colors">
-                                    <span>{shipment.trackingNumber}</span>
-                                    <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-sans text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                        Copy
+                                <div
+                                    className="flex items-center gap-2 text-muted-foreground font-mono text-sm group cursor-pointer hover:text-primary transition-colors w-fit"
+                                    onClick={() => navigator.clipboard.writeText(shipment.trackingNumber)}
+                                >
+                                    <Package className="h-4 w-4" />
+                                    <span className="font-semibold">{shipment.trackingNumber}</span>
+                                    <span className="px-2 py-0.5 rounded-md bg-primary/10 text-[10px] font-sans font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                                        Click to copy
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-4">
+                            <div className="flex items-start gap-3 flex-shrink-0">
                                 <div className="flex flex-col items-end gap-2">
                                     <Badge
                                         variant="outline"
                                         className={cn(
-                                            "h-7 px-3 text-xs font-medium flex items-center gap-1.5 rounded-lg border shadow-sm backdrop-blur-sm",
+                                            "h-8 px-3 text-xs font-semibold flex items-center gap-2 rounded-xl border-2 shadow-sm",
                                             statusColors[shipment.status]
                                         )}
                                     >
-                                        {statusIcons[shipment.status]}
+                                        <span className={cn("w-2 h-2 rounded-full", statusDotColors[shipment.status], (shipment.status === "IN_TRANSIT" || shipment.status === "OUT_FOR_DELIVERY") && "animate-pulse")} />
                                         {shipment.status.replace(/_/g, " ")}
                                     </Badge>
-                                    <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-semibold border backdrop-blur-sm", priorityColors[shipment.priority])}>
+                                    <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-bold border-2", priorityColors[shipment.priority])}>
                                         {shipment.priority} Priority
                                     </Badge>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 -mt-1 -mr-2 text-muted-foreground hover:text-foreground"
+                                    className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80"
                                     onClick={onClose}
                                 >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-5 w-5" />
                                 </Button>
                             </div>
                         </div>
