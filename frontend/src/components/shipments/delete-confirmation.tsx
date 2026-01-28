@@ -48,7 +48,7 @@ export function DeleteConfirmation({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md z-[200]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
