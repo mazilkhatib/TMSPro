@@ -399,5 +399,3 @@ mongosh --eval "use tms; db.shipments.count()"
 - MongoDB Local: mongodb://localhost:27017/tms
 
 ---
-
-**For detailed testing guide, see: [BACKEND_TESTING_GUIDE.md](./BACKEND_TESTING_GUIDE.md)**

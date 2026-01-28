@@ -99,8 +99,10 @@ export const resolvers = {
                 limit?: number;
                 sortBy?: string;
                 sortOrder?: "ASC" | "DESC";
-            }
+            },
+            context: Context
         ) => {
+            checkAuth(context);
             const query: any = {};
 
             // Apply filters
@@ -163,7 +165,8 @@ export const resolvers = {
         },
 
         // Get single shipment by ID
-        shipment: async (_: any, { id }: { id: string }) => {
+        shipment: async (_: any, { id }: { id: string }, context: Context) => {
+            checkAuth(context);
             const shipment = await Shipment.findById(id).populate("createdBy").lean();
             if (!shipment) {
                 throw new GraphQLError("Shipment not found", {
@@ -174,7 +177,8 @@ export const resolvers = {
         },
 
         // Get dashboard statistics
-        shipmentStats: async () => {
+        shipmentStats: async (_: any, __: any, context: Context) => {
+            checkAuth(context);
             const [stats] = await Shipment.aggregate([
                 {
                     $group: {
@@ -215,6 +219,7 @@ export const resolvers = {
 
         // Get current user
         me: async (_: any, __: any, context: Context) => {
+            checkAuth(context);
             if (!context.user) return null;
             const user = await User.findById(context.user.userId).lean();
             return user ? serializeUser(user) : null;
