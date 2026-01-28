@@ -37,9 +37,7 @@ interface ShipmentStatsResponse {
 import {
   Tabs,
   TabsContent,
-  TabsList,
   TabsTrigger,
-  TabsTrigger as TabsTriggerPrimitive,
 } from "@/components/ui/tabs";
 
 interface PaginationInfo {
@@ -158,48 +156,36 @@ export default function DashboardPage() {
       {
         title: "Total Shipments",
         value: statsInfo.total.toLocaleString(),
-        change: "+12.5%",
-        trend: "up" as const,
         icon: Package,
         color: "from-blue-500 to-blue-600"
       },
       {
         title: "In Transit",
         value: statsInfo.inTransit.toLocaleString(),
-        change: "+8.2%",
-        trend: "up" as const,
         icon: Truck,
         color: "from-purple-500 to-purple-600"
       },
       {
         title: "Delivered",
         value: statsInfo.delivered.toLocaleString(),
-        change: "+24.1%",
-        trend: "up" as const,
         icon: CheckCircle,
         color: "from-green-500 to-green-600"
       },
       {
         title: "Pending",
         value: statsInfo.pending.toLocaleString(),
-        change: "-3.4%",
-        trend: "down" as const,
         icon: Clock,
         color: "from-yellow-500 to-yellow-600"
       },
       {
         title: "Flagged",
         value: statsInfo.flagged.toLocaleString(),
-        change: "+2",
-        trend: "up" as const,
         icon: AlertTriangle,
         color: "from-red-500 to-red-600"
       },
       {
         title: "Revenue",
         value: `$${(statsInfo.totalRevenue / 1000).toFixed(1)}K`,
-        change: "+18.7%",
-        trend: "up" as const,
         icon: TrendingUp,
         color: "from-emerald-500 to-emerald-600"
       }
@@ -334,12 +320,6 @@ export default function DashboardPage() {
                           <div className="space-y-1">
                             <p className="text-xs text-muted-foreground">{stat.title}</p>
                             <p className="text-2xl font-bold">{stat.value}</p>
-                            <p
-                              className={`text-xs font-medium ${stat.trend === "up" ? "text-green-500" : "text-red-500"
-                                }`}
-                            >
-                              {stat.change}
-                            </p>
                           </div>
                           <div
                             className={`h-10 w-10 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center`}

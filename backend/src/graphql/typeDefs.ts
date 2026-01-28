@@ -163,7 +163,7 @@ export const typeDefs = `#graphql
 
     # User queries
     me: User
-    users: [User!]! @auth(requires: admin)
+    users: [User!]!  # Note: Admin required - enforced in resolver
   }
 
   type ShipmentStats {
@@ -182,13 +182,11 @@ export const typeDefs = `#graphql
     register(input: RegisterInput!): AuthPayload!
     login(input: LoginInput!): AuthPayload!
 
-    # Shipment mutations (require authentication)
-    createShipment(input: CreateShipmentInput!): Shipment! @auth
-    updateShipment(id: ID!, input: UpdateShipmentInput!): Shipment! @auth
-    deleteShipment(id: ID!): Boolean! @auth(requires: admin)
-    flagShipment(id: ID!, flagged: Boolean!): Shipment! @auth
+    # Shipment mutations
+    # Note: Authentication is enforced in resolvers via checkAuth()
+    createShipment(input: CreateShipmentInput!): Shipment!
+    updateShipment(id: ID!, input: UpdateShipmentInput!): Shipment!
+    deleteShipment(id: ID!): Boolean!
+    flagShipment(id: ID!, flagged: Boolean!): Shipment!
   }
-
-  # Directives
-  directive @auth(requires: UserRole) on FIELD_DEFINITION
 `;

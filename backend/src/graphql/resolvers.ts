@@ -1,7 +1,14 @@
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 import { Shipment, User, IShipment, IUser } from "../models";
 import { Context } from "../types";
+import {
+    registerInputSchema,
+    loginInputSchema,
+    createShipmentInputSchema,
+    updateShipmentInputSchema
+} from "../utils/validations";
 
 // Helper to safely format dates to ISO string
 const toISO = (date: any): string | null => {
@@ -55,7 +62,12 @@ function generateTrackingNumber(): string {
 
 // Helper to generate JWT token
 function generateToken(user: IUser): string {
-    const secret = process.env.JWT_SECRET || "secret";
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new GraphQLError("Server configuration error: JWT_SECRET not set", {
+            extensions: { code: "INTERNAL_SERVER_ERROR" }
+        });
+    }
     const expiresInSeconds = 7 * 24 * 60 * 60; // 7 days in seconds
 
     return jwt.sign(
@@ -236,6 +248,18 @@ export const resolvers = {
     Mutation: {
         // User registration
         register: async (_: any, { input }: { input: any }) => {
+            // Validate input
+            try {
+                registerInputSchema.parse(input);
+            } catch (err) {
+                if (err instanceof z.ZodError) {
+                    throw new GraphQLError(err.issues[0].message, {
+                        extensions: { code: "BAD_USER_INPUT" }
+                    });
+                }
+                throw err;
+            }
+
             const existingUser = await User.findOne({ email: input.email });
             if (existingUser) {
                 throw new GraphQLError("Email already in use", {
@@ -257,6 +281,18 @@ export const resolvers = {
 
         // User login
         login: async (_: any, { input }: { input: any }) => {
+            // Validate input
+            try {
+                loginInputSchema.parse(input);
+            } catch (err) {
+                if (err instanceof z.ZodError) {
+                    throw new GraphQLError(err.issues[0].message, {
+                        extensions: { code: "BAD_USER_INPUT" }
+                    });
+                }
+                throw err;
+            }
+
             const user = await User.findOne({ email: input.email }).select(
                 "+password"
             );
@@ -293,6 +329,18 @@ export const resolvers = {
             context: Context
         ) => {
             const user = checkAuth(context);
+
+            // Validate input
+            try {
+                createShipmentInputSchema.parse(input);
+            } catch (err) {
+                if (err instanceof z.ZodError) {
+                    throw new GraphQLError(err.issues[0].message, {
+                        extensions: { code: "BAD_USER_INPUT" }
+                    });
+                }
+                throw err;
+            }
 
             const shipment = new Shipment({
                 ...input,

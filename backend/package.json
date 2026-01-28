@@ -26,7 +26,8 @@
         "express": "^4.21.0",
         "graphql": "^16.9.0",
         "jsonwebtoken": "^9.0.2",
-        "mongoose": "^8.6.0"
+        "mongoose": "^8.6.0",
+        "zod": "^4.3.6"
     },
     "devDependencies": {
         "@types/bcryptjs": "^2.4.6",

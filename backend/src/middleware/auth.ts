@@ -17,10 +17,12 @@ export async function authMiddleware(
         const token = authHeader.replace("Bearer ", "");
 
         try {
-            const decoded = jwt.verify(
-                token,
-                process.env.JWT_SECRET || "secret"
-            ) as TokenPayload;
+            const secret = process.env.JWT_SECRET;
+            if (!secret) {
+                console.error("JWT_SECRET environment variable is not set");
+                return next();
+            }
+            const decoded = jwt.verify(token, secret) as TokenPayload;
 
             (req as any).user = decoded;
         } catch (error) {

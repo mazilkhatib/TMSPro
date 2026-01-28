@@ -28,9 +28,19 @@ async function startServer() {
     const server = new ApolloServer<Context>({
         typeDefs,
         resolvers,
-        introspection: true,
+        introspection: process.env.NODE_ENV !== "production",
         formatError: (formattedError, error) => {
+            // Log all errors for debugging
             console.error("GraphQL Error:", error);
+
+            // In production, mask internal errors
+            if (process.env.NODE_ENV === "production") {
+                const safeErrorCodes = ["BAD_USER_INPUT", "UNAUTHENTICATED", "FORBIDDEN", "NOT_FOUND"];
+                if (formattedError.extensions?.code && safeErrorCodes.includes(formattedError.extensions.code as string)) {
+                    return formattedError;
+                }
+                return { message: "Internal server error", extensions: { code: "INTERNAL_SERVER_ERROR" } };
+            }
             return formattedError;
         }
     });
