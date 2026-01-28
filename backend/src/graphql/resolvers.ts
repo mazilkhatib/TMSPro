@@ -308,7 +308,7 @@ export const resolvers = {
             { id, input }: { id: string; input: any },
             context: Context
         ) => {
-            checkAuth(context);
+            checkAuth(context, "admin");
 
             const shipment = await Shipment.findByIdAndUpdate(
                 id,
@@ -349,7 +349,7 @@ export const resolvers = {
             { id, flagged }: { id: string; flagged: boolean },
             context: Context
         ) => {
-            checkAuth(context);
+            checkAuth(context, "admin");
 
             const shipment = await Shipment.findByIdAndUpdate(
                 id,
@@ -369,12 +369,16 @@ export const resolvers = {
 
     // Field resolvers
     Shipment: {
-        createdBy: async (parent: any) => {
-            if (parent.createdBy && typeof parent.createdBy === "object") {
+        createdBy: async (parent: any, _: any, context: Context) => {
+            if (parent.createdBy && typeof parent.createdBy === "object" && 'id' in parent.createdBy) {
                 return serializeUser({ ...parent.createdBy, id: parent.createdBy._id?.toString() });
             }
             if (!parent.createdBy) return null;
-            const user = await User.findById(parent.createdBy).lean();
+
+            // Use DataLoader to batch user requests
+            const userId = parent.createdBy.toString();
+            const user = await context.userLoader.load(userId);
+
             return user ? serializeUser(user) : null;
         }
     }

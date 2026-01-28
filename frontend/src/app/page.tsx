@@ -20,6 +20,7 @@ import { HorizontalNav } from "@/components/layout/horizontal-nav";
 import { GridView } from "@/components/shipments/grid-view";
 import { TileView } from "@/components/shipments/tile-view";
 import { DetailModal } from "@/components/shipments/detail-modal";
+import { ViewSwitcher } from "@/components/common/view-switcher";
 
 import { DeleteConfirmation } from "@/components/shipments/delete-confirmation";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -77,7 +78,7 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
 
   // View State
-  const [currentView, setCurrentView] = React.useState("tile");
+  const [currentView, setCurrentView] = React.useState("grid");
 
   // Search and Filter State
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -366,10 +367,7 @@ export default function DashboardPage() {
                       {totalCount} shipments found
                     </p>
                   </div>
-                  <TabsList className="grid w-[200px] grid-cols-2">
-                    <TabsTrigger value="tile">Grid</TabsTrigger>
-                    <TabsTrigger value="grid">Table</TabsTrigger>
-                  </TabsList>
+                  <ViewSwitcher />
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 bg-muted/30 p-4 rounded-lg border border-border/50">
@@ -429,7 +427,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    <TabsContent value="tile" className="mt-0">
+                    <TabsContent value="grid" className="mt-0">
                       <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -448,7 +446,7 @@ export default function DashboardPage() {
                         />
                       </motion.div>
                     </TabsContent>
-                    <TabsContent value="grid" className="mt-0">
+                    <TabsContent value="list" className="mt-0">
                       <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}

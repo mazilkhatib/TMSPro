@@ -52,6 +52,10 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { HorizontalNav } from "@/components/layout/horizontal-nav";
 import { ProtectedRoute } from "@/components/auth/protected-route";
+import { ViewSwitcher } from "@/components/common/view-switcher";
+import { GridView } from "@/components/shipments/grid-view";
+import { TileView } from "@/components/shipments/tile-view";
+import { DetailModal } from "@/components/shipments/detail-modal";
 import { GET_SHIPMENTS } from "@/graphql/queries";
 import { DELETE_SHIPMENT, FLAG_SHIPMENT } from "@/graphql/mutations";
 import { Shipment, ShipmentStatus, ShipmentPriority } from "@/types";
@@ -104,6 +108,7 @@ export default function ShipmentsPage() {
     const router = useRouter();
     const [page, setPage] = React.useState(1);
     const [selectedShipment, setSelectedShipment] = React.useState<Shipment | null>(null);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
     // Search and Filter State
@@ -220,6 +225,16 @@ export default function ShipmentsPage() {
         router.push(`/shipments/edit/${shipment.id}`);
     };
 
+    const handleSelectShipment = (shipment: Shipment) => {
+        setSelectedShipment(shipment);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setTimeout(() => setSelectedShipment(null), 200);
+    };
+
     const handleView = (shipment: Shipment) => {
         // For now, just edit. You can create a separate view page later
         router.push(`/shipments/edit/${shipment.id}`);
@@ -276,7 +291,7 @@ export default function ShipmentsPage() {
                     />
 
                     <main className="flex-1 p-6 space-y-6 bg-gradient-to-br from-background via-background to-muted/20">
-                        <Tabs defaultValue="table" className="w-full space-y-6">
+                        <Tabs defaultValue="list" className="w-full space-y-6">
                             {/* Header */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div>
@@ -286,10 +301,7 @@ export default function ShipmentsPage() {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                                    <TabsList className="grid w-[200px] grid-cols-2">
-                                        <TabsTrigger value="table">Table</TabsTrigger>
-                                        <TabsTrigger value="grid">Grid</TabsTrigger>
-                                    </TabsList>
+                                    <ViewSwitcher />
                                     <Button onClick={() => router.push("/shipments/new")} size="sm" className="h-9">
                                         <Plus className="h-4 w-4 mr-2" />
                                         Create
@@ -297,237 +309,53 @@ export default function ShipmentsPage() {
                                 </div>
                             </div>
 
-                            <TabsContent value="table" className="mt-0">
-                                <Card className="border-border/50">
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="hover:bg-transparent border-b border-border/50">
-                                                    <TableHead>Tracking #</TableHead>
-                                                    <TableHead>Shipper</TableHead>
-                                                    <TableHead>Carrier</TableHead>
-                                                    <TableHead>Origin</TableHead>
-                                                    <TableHead>Destination</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                    <TableHead>Priority</TableHead>
-                                                    <TableHead className="text-right">Rate</TableHead>
-                                                    <TableHead className="text-right">Weight</TableHead>
-                                                    <TableHead className="text-right">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {shipments.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
-                                                            No shipments found. Create your first shipment to get started.
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    shipments.map((shipment: Shipment, index: number) => (
-                                                        <motion.tr
-                                                            key={shipment.id}
-                                                            initial={{ opacity: 0, y: 10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            transition={{ duration: 0.2, delay: index * 0.02 }}
-                                                            className={cn(
-                                                                "border-b border-border/30 transition-colors",
-                                                                shipment.flagged && "bg-destructive/5"
-                                                            )}
-                                                        >
-                                                            <TableCell className="font-mono text-xs font-medium">
-                                                                {shipment.trackingNumber.slice(0, 12)}
-                                                            </TableCell>
-                                                            <TableCell className="font-medium">{shipment.shipperName}</TableCell>
-                                                            <TableCell>{shipment.carrierName}</TableCell>
-                                                            <TableCell className="text-sm">
-                                                                {shipment.pickupLocation.city}, {shipment.pickupLocation.state}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm">
-                                                                {shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="outline" className={cn("text-xs font-medium", statusColors[shipment.status])}>
-                                                                    {shipment.status.replace(/_/g, " ")}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="secondary" className={cn("text-xs", priorityColors[shipment.priority])}>
-                                                                    {shipment.priority}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell className="text-right font-medium">
-                                                                {formatCurrency(shipment.rate)}
-                                                            </TableCell>
-                                                            <TableCell className="text-right tabular-nums">
-                                                                {shipment.weight.toLocaleString()}
-                                                            </TableCell>
-                                                            <TableCell className="text-right">
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                            <Edit className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="end" className="w-48">
-                                                                        <DropdownMenuItem asChild>
-                                                                            <Link href={`/shipments/edit/${shipment.id}`} className="flex items-center w-full cursor-pointer">
-                                                                                <Eye className="mr-2 h-4 w-4" />
-                                                                                View Details
-                                                                            </Link>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem asChild>
-                                                                            <Link href={`/shipments/edit/${shipment.id}`} className="flex items-center w-full cursor-pointer">
-                                                                                <Edit className="mr-2 h-4 w-4" />
-                                                                                Edit
-                                                                            </Link>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => handleFlag(shipment)}>
-                                                                            <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
-                                                                            {shipment.flagged ? "Unflag" : "Flag"}
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => {
-                                                                                setSelectedShipment(shipment);
-                                                                                setIsDeleteDialogOpen(true);
-                                                                            }}
-                                                                            className="text-destructive focus:text-destructive"
-                                                                        >
-                                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                                            Delete
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </TableCell>
-                                                        </motion.tr>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
+                            <TabsContent value="list" className="mt-0">
+                                <GridView
+                                    shipments={shipments}
+                                    onSelectShipment={handleSelectShipment}
+                                    onEdit={handleEdit}
+                                    onFlag={handleFlag}
+                                    onDelete={(shipment) => {
+                                        setSelectedShipment(shipment);
+                                        setIsDeleteDialogOpen(true);
+                                    }}
+                                    page={page}
+                                    totalPages={totalPages}
+                                    onPageChange={setPage}
+                                />
                             </TabsContent>
 
                             <TabsContent value="grid" className="mt-0">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                    {shipments.map((shipment: Shipment, index: number) => (
-                                        <motion.div
-                                            key={shipment.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2, delay: index * 0.02 }}
-                                        >
-                                            <Card className={cn("h-full hover:shadow-lg transition-shadow duration-200", shipment.flagged && "border-destructive/50 bg-destructive/5")}>
-                                                <CardContent className="p-6 space-y-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <Badge variant="outline" className={cn("font-mono", statusColors[shipment.status])}>
-                                                            {shipment.status.replace(/_/g, " ")}
-                                                        </Badge>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2">
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => router.push(`/shipments/edit/${shipment.id}`)}>
-                                                                    <Eye className="mr-2 h-4 w-4" /> View Details
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => router.push(`/shipments/edit/${shipment.id}`)}>
-                                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleFlag(shipment)}>
-                                                                    <Flag className="mr-2 h-4 w-4" /> {shipment.flagged ? "Unflag" : "Flag"}
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem onClick={() => { setSelectedShipment(shipment); setIsDeleteDialogOpen(true); }} className="text-destructive">
-                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg">{shipment.trackingNumber}</h3>
-                                                        <p className="text-sm text-muted-foreground">{shipment.carrierName}</p>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                                        <div>
-                                                            <p className="text-muted-foreground text-xs">Origin</p>
-                                                            <p className="font-medium truncate">{shipment.pickupLocation.city}, {shipment.pickupLocation.state}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-muted-foreground text-xs">Destination</p>
-                                                            <p className="font-medium truncate">{shipment.deliveryLocation.city}, {shipment.deliveryLocation.state}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-4 border-t flex justify-between items-center text-sm">
-                                                        <div className="flex items-center text-muted-foreground">
-                                                            <Badge variant="secondary" className={cn("mr-2 text-xs", priorityColors[shipment.priority])}>
-                                                                {shipment.priority}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="font-semibold">
-                                                            {formatCurrency(shipment.rate)}
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </motion.div>
-                                    ))}
-                                </div>
+                                <TileView
+                                    shipments={shipments}
+                                    onSelectShipment={handleSelectShipment}
+                                    onEdit={handleEdit}
+                                    onFlag={handleFlag}
+                                    onDelete={(shipment) => {
+                                        setSelectedShipment(shipment);
+                                        setIsDeleteDialogOpen(true);
+                                    }}
+                                    page={page}
+                                    totalPages={totalPages}
+                                    onPageChange={setPage}
+                                />
                             </TabsContent>
                         </Tabs>
-
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-between px-2">
-                                <p className="text-sm text-muted-foreground">
-                                    Page {page} of {totalPages}
-                                </p>
-                                <div className="flex items-center gap-1">
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setPage(1)}
-                                        disabled={page === 1}
-                                    >
-                                        ««
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setPage(page - 1)}
-                                        disabled={page === 1}
-                                    >
-                                        ‹
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setPage(page + 1)}
-                                        disabled={page === totalPages}
-                                    >
-                                        ›
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setPage(totalPages)}
-                                        disabled={page === totalPages}
-                                    >
-                                        »»
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
                     </main>
+
+                    {/* Detail Modal */}
+                    <DetailModal
+                        shipment={selectedShipment}
+                        isOpen={isModalOpen}
+                        onClose={handleCloseModal}
+                        onEdit={handleEdit}
+                        onFlag={handleFlag}
+                        onDelete={(shipment) => {
+                            setSelectedShipment(shipment);
+                            setIsDeleteDialogOpen(true);
+                        }}
+                    />
+
 
                     {/* Delete Confirmation Dialog */}
                     {isDeleteDialogOpen && selectedShipment && (

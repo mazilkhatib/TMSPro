@@ -9,7 +9,12 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
-    ChevronsRight
+    ChevronsRight,
+    Edit,
+    Flag,
+    Trash2,
+    Eye,
+    MoreHorizontal
 } from "lucide-react";
 import {
     Table,
@@ -19,14 +24,25 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Shipment, ShipmentStatus, ShipmentPriority } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 
 interface GridViewProps {
     shipments: Shipment[];
     onSelectShipment: (shipment: Shipment) => void;
+    onEdit?: (shipment: Shipment) => void;
+    onFlag?: (shipment: Shipment) => void;
+    onDelete?: (shipment: Shipment) => void;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
     onSort?: (field: string) => void;
@@ -87,6 +103,9 @@ function SortableHeader({ children, field, sortBy, sortOrder, onSort }: Sortable
 export function GridView({
     shipments,
     onSelectShipment,
+    onEdit,
+    onFlag,
+    onDelete,
     sortBy,
     sortOrder,
     onSort,
@@ -94,6 +113,9 @@ export function GridView({
     totalPages,
     onPageChange
 }: GridViewProps) {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString("en-US", {
             month: "short",
@@ -152,6 +174,7 @@ export function GridView({
                                     Weight (lbs)
                                 </SortableHeader>
                             </TableHead>
+                            <TableHead className="text-right w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -194,6 +217,36 @@ export function GridView({
                                 </TableCell>
                                 <TableCell className="text-right tabular-nums">
                                     {shipment.weight.toLocaleString()}
+                                </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => onSelectShipment(shipment)}>
+                                                <Eye className="mr-2 h-4 w-4" /> View Details
+                                            </DropdownMenuItem>
+
+                                            {isAdmin && (
+                                                <>
+                                                    <DropdownMenuItem onClick={() => onEdit?.(shipment)}>
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => onFlag?.(shipment)}>
+                                                        <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
+                                                        {shipment.flagged ? "Unflag" : "Flag"}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => onDelete?.(shipment)} className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </TableCell>
                             </motion.tr>
                         ))}

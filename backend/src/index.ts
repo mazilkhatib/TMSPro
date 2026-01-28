@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { typeDefs, resolvers } from "./graphql";
 import { authMiddleware } from "./middleware";
 import { Context } from "./types";
+import { createUserLoader } from "./utils/dataloader";
 
 const PORT = process.env.PORT || 4000;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/tms";
@@ -53,7 +54,8 @@ async function startServer() {
         expressMiddleware(server, {
             context: async ({ req }) => ({
                 req,
-                user: (req as any).user || null
+                user: (req as any).user || null,
+                userLoader: createUserLoader()
             })
         })
     );

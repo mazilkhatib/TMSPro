@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Shipment, ShipmentStatus, ShipmentPriority } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TileViewProps {
     shipments: Shipment[];
@@ -93,6 +94,9 @@ export function TileView({
     totalPages,
     onPageChange
 }: TileViewProps) {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString("en-US", {
             month: "short",
@@ -127,7 +131,7 @@ export function TileView({
                             )}
                             onClick={() => onSelectShipment(shipment)}
                         >
-                            <CardContent className="p-2 sm:p-5 space-y-2">
+                            <CardContent className="p-3 sm:p-4 space-y-2">
                                 <div className="flex justify-between items-start">
                                     <Badge variant="outline" className={cn("font-mono", statusColors[shipment.status])}>
                                         {shipment.status.replace(/_/g, " ")}
@@ -147,17 +151,22 @@ export function TileView({
                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectShipment(shipment); }}>
                                                 <Eye className="mr-2 h-4 w-4" /> View Details
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(shipment); }}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onFlag?.(shipment); }}>
-                                                <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
-                                                {shipment.flagged ? "Unflag" : "Flag"}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(shipment); }} className="text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
+
+                                            {isAdmin && (
+                                                <>
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(shipment); }}>
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onFlag?.(shipment); }}>
+                                                        <Flag className={cn("mr-2 h-4 w-4", shipment.flagged && "fill-destructive text-destructive")} />
+                                                        {shipment.flagged ? "Unflag" : "Flag"}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(shipment); }} className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
